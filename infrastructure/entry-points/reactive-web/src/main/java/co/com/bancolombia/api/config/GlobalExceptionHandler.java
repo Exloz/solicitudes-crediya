@@ -1,5 +1,9 @@
 package co.com.bancolombia.api.config;
 
+import co.com.bancolombia.model.exception.InvalidLoanAmountException;
+import co.com.bancolombia.model.exception.LoanApplicationNotFoundException;
+import co.com.bancolombia.model.exception.LoanTypeNotFoundException;
+import co.com.bancolombia.model.exception.StateNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,15 +18,19 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     public static Mono<ServerResponse> handleException(Throwable throwable) {
-        log.error("Handling exception: {}", throwable.getMessage(), throwable);
+        log.error("Handling exception: {}", throwable.getMessage());
 
-        if (throwable instanceof IllegalArgumentException) {
-            return handleBadRequest(throwable.getMessage());
-        } else if (throwable instanceof WebExchangeBindException) {
-            return handleValidationException((WebExchangeBindException) throwable);
-        } else {
-            return handleInternalServerError(throwable.getMessage());
-        }
+        return switch (throwable) {
+            case InvalidLoanAmountException ignored -> handleBadRequest(throwable.getMessage());
+            case LoanTypeNotFoundException ignored -> handleBadRequest(throwable.getMessage());
+            case StateNotFoundException ignored -> handleBadRequest(throwable.getMessage());
+            case LoanApplicationNotFoundException ignored ->
+                    handleNotFound(throwable.getMessage());
+            case IllegalArgumentException ignored -> handleBadRequest(throwable.getMessage());
+            case WebExchangeBindException webExchangeBindException ->
+                    handleValidationException(webExchangeBindException);
+            default -> handleInternalServerError(throwable.getMessage());
+        };
     }
 
     private static Mono<ServerResponse> handleBadRequest(String message) {
@@ -50,6 +58,17 @@ public class GlobalExceptionHandler {
         return ServerResponse.status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(errors);
+    }
+
+    private static Mono<ServerResponse> handleNotFound(String message) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", "Not Found");
+        error.put("message", message);
+        error.put("status", HttpStatus.NOT_FOUND.value());
+
+        return ServerResponse.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(error);
     }
 
     private static Mono<ServerResponse> handleInternalServerError(String message) {

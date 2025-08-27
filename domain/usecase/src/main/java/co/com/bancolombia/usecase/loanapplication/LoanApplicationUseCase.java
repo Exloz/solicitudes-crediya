@@ -25,7 +25,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
     @Override
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication) {
         return loanTypeRepository.findById(loanApplication.getLoanTypeId())
-                .switchIfEmpty(Mono.error(new LoanTypeNotFoundException("Loan type not found: " + loanApplication.getClientId())))
+                .switchIfEmpty(Mono.error(new LoanTypeNotFoundException("Loan type not found: " + loanApplication.getLoanTypeId())))
                 .flatMap(loanType -> validateLoanAmount(loanApplication.getAmount(), loanType))
                 .flatMap(loanType -> getPendingReviewState()
                         .map(state -> LoanApplication.builder()
