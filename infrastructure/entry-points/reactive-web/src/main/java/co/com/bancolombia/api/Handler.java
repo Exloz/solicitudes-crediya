@@ -33,7 +33,7 @@ public class Handler {
                 .map(mapper::toResponse)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
                 .doOnSuccess(response -> log.info("Loan application registered successfully"))
-                .doOnError(error -> log.error("Error registering loan application", error));
+                .doOnError(error -> log.error("Error registering loan application"));
     }
 
     private Mono<LoanApplicationRequest> validateRequest(LoanApplicationRequest request) {

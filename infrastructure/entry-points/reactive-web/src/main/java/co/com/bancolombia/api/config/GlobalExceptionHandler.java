@@ -18,7 +18,7 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     public static Mono<ServerResponse> handleException(Throwable throwable) {
-        log.error("Handling exception: {}", throwable.getMessage());
+        log.error("Exception: {}", throwable.getMessage());
 
         return switch (throwable) {
             case InvalidLoanAmountException ignored -> handleBadRequest(throwable.getMessage());
