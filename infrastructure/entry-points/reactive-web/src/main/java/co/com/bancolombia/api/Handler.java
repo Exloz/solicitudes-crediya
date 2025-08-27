@@ -1,7 +1,6 @@
 package co.com.bancolombia.api;
 
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
-import co.com.bancolombia.api.dto.LoanApplicationResponse;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
 import co.com.bancolombia.usecase.loanapplication.LoanApplicationUseCasePort;
 import jakarta.validation.ConstraintViolation;
@@ -33,7 +32,7 @@ public class Handler {
                 .map(mapper::toResponse)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
                 .doOnSuccess(response -> log.info("Loan application registered successfully"))
-                .doOnError(error -> log.error("Error registering loan application"));
+                .doOnError(error -> log.error("Error registering loan application on: {}", getOriginOfError(error)));
     }
 
     private Mono<LoanApplicationRequest> validateRequest(LoanApplicationRequest request) {
@@ -44,5 +43,13 @@ public class Handler {
             return Mono.error(new IllegalArgumentException(message.toString()));
         }
         return Mono.just(request);
+    }
+
+    private String getOriginOfError(Throwable error) {
+        if (error.getStackTrace().length > 0) {
+            var origin = error.getStackTrace()[0];
+            return origin.getClassName() + "." + origin.getMethodName() + " (line " + origin.getLineNumber() + ")";
+        }
+        return "Unknown origin";
     }
 }
