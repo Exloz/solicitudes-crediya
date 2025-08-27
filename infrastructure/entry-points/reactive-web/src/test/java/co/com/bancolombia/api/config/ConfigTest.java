@@ -2,27 +2,51 @@ package co.com.bancolombia.api.config;
 
 import co.com.bancolombia.api.Handler;
 import co.com.bancolombia.api.RouterRest;
+import co.com.bancolombia.api.mapper.LoanApplicationMapper;
+import co.com.bancolombia.model.loanapplication.LoanApplication;
+import co.com.bancolombia.usecase.loanapplication.LoanApplicationUseCasePort;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
-@ContextConfiguration(classes = {RouterRest.class, Handler.class})
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 @WebFluxTest
-@Import({CorsConfig.class, SecurityHeadersConfig.class})
+@ContextConfiguration(classes = ConfigTest.TestConfig.class)
 class ConfigTest {
 
     @Autowired
     private WebTestClient webTestClient;
 
+    @MockitoBean
+    private LoanApplicationUseCasePort loanApplicationUseCase;
+
+    @MockitoBean
+    private Validator validator;
+
     @Test
-    void corsConfigurationShouldAllowOrigins() {
-        webTestClient.get()
-                .uri("/api/usecase/path")
+    void securityHeadersShouldBePresent() {
+        // Mock the use case to avoid dependency issues
+        when(validator.validate(any())).thenReturn(java.util.Collections.emptySet());
+        when(loanApplicationUseCase.registerLoanApplication(any(LoanApplication.class)))
+                .thenReturn(Mono.just(LoanApplication.builder().build()));
+
+        // Test with POST request to check security headers
+        webTestClient.post()
+                .uri("/api/v1/solicitud")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .bodyValue("{}")
                 .exchange()
-                .expectStatus().isOk()
+                .expectStatus().isOk() // Endpoint processes the request successfully
                 .expectHeader().valueEquals("Content-Security-Policy",
                         "default-src 'self'; frame-ancestors 'self'; form-action 'self'")
                 .expectHeader().valueEquals("Strict-Transport-Security", "max-age=31536000;")
@@ -33,4 +57,13 @@ class ConfigTest {
                 .expectHeader().valueEquals("Referrer-Policy", "strict-origin-when-cross-origin");
     }
 
+    @Configuration
+    @Import({RouterRest.class, Handler.class, CorsConfig.class, SecurityHeadersConfig.class})
+    static class TestConfig {
+
+        @Bean
+        public LoanApplicationMapper loanApplicationMapper() {
+            return org.mapstruct.factory.Mappers.getMapper(LoanApplicationMapper.class);
+        }
+    }
 }
