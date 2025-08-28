@@ -4,8 +4,12 @@ import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.spi.ConnectionFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.r2dbc.connection.R2dbcTransactionManager;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import java.time.Duration;
 
@@ -38,5 +42,10 @@ public class PostgreSQLConnectionPool {
                 .build();
 
 		return new ConnectionPool(poolConfiguration);
+	}
+
+	@Bean
+	public TransactionalOperator transactionalOperator(ReactiveTransactionManager transactionManager) {
+		return TransactionalOperator.create(transactionManager);
 	}
 }
