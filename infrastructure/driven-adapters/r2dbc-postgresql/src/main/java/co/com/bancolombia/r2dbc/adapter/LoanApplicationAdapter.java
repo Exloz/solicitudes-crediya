@@ -26,8 +26,10 @@ public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplic
 
     @Override
     public Mono<LoanApplication> saveLoanApplication(LoanApplication loanApplication) {
-        return transactionalOperator.execute(status -> super.save(loanApplication)).next();
+        return super.save(loanApplication)
+                .as(transactionalOperator::transactional);
     }
+
 
     @Override
     public Mono<LoanApplication> findById(UUID id) {
