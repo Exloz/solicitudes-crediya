@@ -11,20 +11,26 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
+    private static final String API_TITLE = "Loan Application API";
+    private static final String API_VERSION = "1.0.0";
+    private static final String API_DESCRIPTION = "API for managing loan applications";
+    private static final String PUBLIC_GROUP = "public";
+    private static final String API_PATH_PATTERN = "/api/v1/**";
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Loan Application API")
-                        .version("1.0.0")
-                        .description("API for managing loan applications"));
+                        .title(API_TITLE)
+                        .version(API_VERSION)
+                        .description(API_DESCRIPTION));
     }
 
     @Bean
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
-                .group("public")
-                .pathsToMatch("/api/v1/**")
+                .group(PUBLIC_GROUP)
+                .pathsToMatch(API_PATH_PATTERN)
                 .build();
     }
 }

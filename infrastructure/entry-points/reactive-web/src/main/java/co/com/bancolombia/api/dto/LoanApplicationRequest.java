@@ -19,21 +19,38 @@ import java.math.BigDecimal;
 @Schema(description = "Request object for creating a new loan application")
 public class LoanApplicationRequest {
 
-    @Schema(description = "Unique identifier of the client", example = "1")
-    @NotBlank(message = "Client ID is required")
+    private static final String CLIENT_ID_DESCRIPTION = "Unique identifier of the client";
+    private static final String CLIENT_ID_EXAMPLE = "1";
+    private static final String CLIENT_ID_REQUIRED_MESSAGE = "Client ID is required";
+    private static final String AMOUNT_DESCRIPTION = "Requested loan amount";
+    private static final String AMOUNT_EXAMPLE = "50000.00";
+    private static final String AMOUNT_MINIMUM = "0.01";
+    private static final String AMOUNT_REQUIRED_MESSAGE = "Amount is required";
+    private static final String AMOUNT_MIN_MESSAGE = "Amount must be greater than 0";
+    private static final String TERM_DESCRIPTION = "Loan term in months";
+    private static final String TERM_EXAMPLE = "12";
+    private static final String TERM_MIN_VALUE = "1";
+    private static final String TERM_REQUIRED_MESSAGE = "Term is required";
+    private static final String TERM_MIN_MESSAGE = "Term must be at least 1 month";
+    private static final String LOAN_TYPE_ID_DESCRIPTION = "ID of the loan type";
+    private static final String LOAN_TYPE_ID_EXAMPLE = "1";
+    private static final String LOAN_TYPE_ID_REQUIRED_MESSAGE = "Loan type ID is required";
+
+    @Schema(description = CLIENT_ID_DESCRIPTION, example = CLIENT_ID_EXAMPLE)
+    @NotBlank(message = CLIENT_ID_REQUIRED_MESSAGE)
     private String clientId;
 
-    @Schema(description = "Requested loan amount", example = "50000.00", minimum = "0.01")
-    @NotNull(message = "Amount is required")
-    @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
+    @Schema(description = AMOUNT_DESCRIPTION, example = AMOUNT_EXAMPLE, minimum = AMOUNT_MINIMUM)
+    @NotNull(message = AMOUNT_REQUIRED_MESSAGE)
+    @DecimalMin(value = AMOUNT_MINIMUM, message = AMOUNT_MIN_MESSAGE)
     private BigDecimal amount;
 
-    @Schema(description = "Loan term in months", example = "12", minimum = "1")
-    @NotNull(message = "Term is required")
-    @Min(value = 1, message = "Term must be at least 1 month")
+    @Schema(description = TERM_DESCRIPTION, example = TERM_EXAMPLE, minimum = TERM_MIN_VALUE)
+    @NotNull(message = TERM_REQUIRED_MESSAGE)
+    @Min(value = 1, message = TERM_MIN_MESSAGE)
     private Integer term;
 
-    @Schema(description = "ID of the loan type", example = "1")
-    @NotNull(message = "Loan type ID is required")
+    @Schema(description = LOAN_TYPE_ID_DESCRIPTION, example = LOAN_TYPE_ID_EXAMPLE)
+    @NotNull(message = LOAN_TYPE_ID_REQUIRED_MESSAGE)
     private Long loanTypeId;
 }

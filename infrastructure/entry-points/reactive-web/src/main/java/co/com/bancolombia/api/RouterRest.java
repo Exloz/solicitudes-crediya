@@ -21,28 +21,40 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 
 @Configuration
 public class RouterRest {
+
+    private static final String LOAN_APPLICATION_PATH = "/api/v1/solicitud";
+    private static final String CREATE_LOAN_APPLICATION_OPERATION_ID = "createLoanApplication";
+    private static final String REGISTER_LOAN_APPLICATION_SUMMARY = "Register loan application";
+    private static final String REGISTER_LOAN_APPLICATION_DESCRIPTION = "Registers a new loan application in the system";
+    private static final String REQUEST_BODY_DESCRIPTION = "Loan application data to register";
+    private static final String RESPONSE_CREATED_DESCRIPTION = "Loan application created successfully";
+    private static final String RESPONSE_BAD_REQUEST_DESCRIPTION = "Invalid input data";
+    private static final String RESPONSE_NOT_FOUND_DESCRIPTION = "Loan type not found";
+    private static final String RESPONSE_UNPROCESSABLE_ENTITY_DESCRIPTION = "Loan amount outside allowed limits";
+    private static final String RESPONSE_INTERNAL_SERVER_ERROR_DESCRIPTION = "Internal server error";
+
     @Bean
     @RouterOperations({
-            @RouterOperation( path = "/api/v1/solicitud",
+            @RouterOperation( path = LOAN_APPLICATION_PATH,
                     produces = { MediaType.APPLICATION_JSON_VALUE }, method = RequestMethod.POST, beanClass = Handler.class, beanMethod = "registerLoanApplication",
-                    operation = @Operation( operationId = "createLoanApplication",
-                            summary = "Register loan application",
-                            description = "Registers a new loan application in the system",
+                    operation = @Operation( operationId = CREATE_LOAN_APPLICATION_OPERATION_ID,
+                            summary = REGISTER_LOAN_APPLICATION_SUMMARY,
+                            description = REGISTER_LOAN_APPLICATION_DESCRIPTION,
                             requestBody = @RequestBody(
-                                description = "Loan application data to register",
+                                description = REQUEST_BODY_DESCRIPTION,
                                 required = true,
                                 content = @Content(schema = @Schema(implementation = LoanApplicationRequest.class))
                             ),
                             responses = {
-                                @ApiResponse(responseCode = "201", description = "Loan application created successfully",
+                                @ApiResponse(responseCode = "201", description = RESPONSE_CREATED_DESCRIPTION,
                                     content = @Content(schema = @Schema(implementation = LoanApplicationResponse.class))),
-                                @ApiResponse(responseCode = "400", description = "Invalid input data"),
-                                @ApiResponse(responseCode = "404", description = "Loan type not found"),
-                                @ApiResponse(responseCode = "422", description = "Loan amount outside allowed limits"),
-                                @ApiResponse(responseCode = "500", description = "Internal server error")
+                                @ApiResponse(responseCode = "400", description = RESPONSE_BAD_REQUEST_DESCRIPTION),
+                                @ApiResponse(responseCode = "404", description = RESPONSE_NOT_FOUND_DESCRIPTION),
+                                @ApiResponse(responseCode = "422", description = RESPONSE_UNPROCESSABLE_ENTITY_DESCRIPTION),
+                                @ApiResponse(responseCode = "500", description = RESPONSE_INTERNAL_SERVER_ERROR_DESCRIPTION)
                             })
             )})
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
-        return route(POST("/api/v1/solicitud"), handler::registerLoanApplication);
+        return route(POST(LOAN_APPLICATION_PATH), handler::registerLoanApplication);
     }
 }

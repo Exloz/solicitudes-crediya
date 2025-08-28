@@ -13,16 +13,21 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    private static final String POST_METHOD = "POST";
+    private static final String GET_METHOD = "GET";
+    private static final String ALL_PATHS = "/**";
+    private static final String ORIGINS_SEPARATOR = ",";
+
     @Bean
     CorsWebFilter corsWebFilter(@Value("${cors.allowed-origins}") String origins) {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of(origins.split(",")));
-        config.setAllowedMethods(Arrays.asList("POST", "GET")); // TODO: Check others required methods
+        config.setAllowedOrigins(List.of(origins.split(ORIGINS_SEPARATOR)));
+        config.setAllowedMethods(Arrays.asList(POST_METHOD, GET_METHOD));
         config.setAllowedHeaders(List.of(CorsConfiguration.ALL));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
+        source.registerCorsConfiguration(ALL_PATHS, config);
 
         return new CorsWebFilter(source);
     }

@@ -17,8 +17,19 @@ import java.util.Map;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    private static final String EXCEPTION_LOG_MESSAGE = "Exception: {}";
+    private static final String ERROR_KEY = "error";
+    private static final String MESSAGE_KEY = "message";
+    private static final String STATUS_KEY = "status";
+    private static final String BAD_REQUEST_ERROR = "Bad Request";
+    private static final String VALIDATION_ERROR = "Validation Error";
+    private static final String FIELD_ERRORS_KEY = "fieldErrors";
+    private static final String NOT_FOUND_ERROR = "Not Found";
+    private static final String INTERNAL_SERVER_ERROR = "Internal Server Error";
+    private static final String INTERNAL_SERVER_ERROR_MESSAGE = "An unexpected error occurred";
+
     public static Mono<ServerResponse> handleException(Throwable throwable) {
-        log.error("Exception: {}", throwable.getMessage());
+        log.error(EXCEPTION_LOG_MESSAGE, throwable.getMessage());
 
         return switch (throwable) {
             case InvalidLoanAmountException ignored -> handleBadRequest(throwable.getMessage());
@@ -35,9 +46,9 @@ public class GlobalExceptionHandler {
 
     private static Mono<ServerResponse> handleBadRequest(String message) {
         Map<String, Object> error = new HashMap<>();
-        error.put("error", "Bad Request");
-        error.put("message", message);
-        error.put("status", HttpStatus.BAD_REQUEST.value());
+        error.put(ERROR_KEY, BAD_REQUEST_ERROR);
+        error.put(MESSAGE_KEY, message);
+        error.put(STATUS_KEY, HttpStatus.BAD_REQUEST.value());
 
         return ServerResponse.status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -46,14 +57,14 @@ public class GlobalExceptionHandler {
 
     private static Mono<ServerResponse> handleValidationException(WebExchangeBindException ex) {
         Map<String, Object> errors = new HashMap<>();
-        errors.put("error", "Validation Error");
-        errors.put("status", HttpStatus.BAD_REQUEST.value());
+        errors.put(ERROR_KEY, VALIDATION_ERROR);
+        errors.put(STATUS_KEY, HttpStatus.BAD_REQUEST.value());
 
         Map<String, String> fieldErrors = new HashMap<>();
         ex.getFieldErrors().forEach(error ->
             fieldErrors.put(error.getField(), error.getDefaultMessage()));
 
-        errors.put("fieldErrors", fieldErrors);
+        errors.put(FIELD_ERRORS_KEY, fieldErrors);
 
         return ServerResponse.status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -62,9 +73,9 @@ public class GlobalExceptionHandler {
 
     private static Mono<ServerResponse> handleNotFound(String message) {
         Map<String, Object> error = new HashMap<>();
-        error.put("error", "Not Found");
-        error.put("message", message);
-        error.put("status", HttpStatus.NOT_FOUND.value());
+        error.put(ERROR_KEY, NOT_FOUND_ERROR);
+        error.put(MESSAGE_KEY, message);
+        error.put(STATUS_KEY, HttpStatus.NOT_FOUND.value());
 
         return ServerResponse.status(HttpStatus.NOT_FOUND)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -73,9 +84,9 @@ public class GlobalExceptionHandler {
 
     private static Mono<ServerResponse> handleInternalServerError(String message) {
         Map<String, Object> error = new HashMap<>();
-        error.put("error", "Internal Server Error");
-        error.put("message", "An unexpected error occurred");
-        error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        error.put(ERROR_KEY, INTERNAL_SERVER_ERROR);
+        error.put(MESSAGE_KEY, INTERNAL_SERVER_ERROR_MESSAGE);
+        error.put(STATUS_KEY, HttpStatus.INTERNAL_SERVER_ERROR.value());
 
         return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)

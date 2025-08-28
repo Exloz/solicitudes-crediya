@@ -19,27 +19,35 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class Handler {
 
+    private static final String RECEIVED_LOAN_APPLICATION_LOG = "Received loan application request: {}";
+    private static final String LOAN_APPLICATION_REGISTERED_LOG = "Loan application registered successfully";
+    private static final String ERROR_REGISTERING_LOAN_APPLICATION_LOG = "Error registering loan application on: {}";
+    private static final String VALIDATION_ERRORS_PREFIX = "Validation errors: ";
+    private static final String VALIDATION_ERROR_SEPARATOR = "; ";
+    private static final String UNKNOWN_ORIGIN = "Unknown origin";
+    private static final String CLASS_METHOD_LINE_FORMAT = "%s.%s (line %d)";
+
     private final LoanApplicationUseCasePort loanApplicationUseCase;
     private final Validator validator;
     private final LoanApplicationMapper mapper;
 
     public Mono<ServerResponse> registerLoanApplication(ServerRequest serverRequest) {
         return serverRequest.bodyToMono(LoanApplicationRequest.class)
-                .doOnNext(request -> log.info("Received loan application request: {}", request))
+                .doOnNext(request -> log.info(RECEIVED_LOAN_APPLICATION_LOG, request))
                 .flatMap(this::validateRequest)
                 .map(mapper::toModel)
                 .flatMap(loanApplicationUseCase::registerLoanApplication)
                 .map(mapper::toResponse)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
-                .doOnSuccess(response -> log.info("Loan application registered successfully"))
-                .doOnError(error -> log.error("Error registering loan application on: {}", getOriginOfError(error)));
+                .doOnSuccess(response -> log.info(LOAN_APPLICATION_REGISTERED_LOG))
+                .doOnError(error -> log.error(ERROR_REGISTERING_LOAN_APPLICATION_LOG, getOriginOfError(error)));
     }
 
     private Mono<LoanApplicationRequest> validateRequest(LoanApplicationRequest request) {
         Set<ConstraintViolation<LoanApplicationRequest>> violations = validator.validate(request);
         if (!violations.isEmpty()) {
-            StringBuilder message = new StringBuilder("Validation errors: ");
-            violations.forEach(violation -> message.append(violation.getMessage()).append("; "));
+            StringBuilder message = new StringBuilder(VALIDATION_ERRORS_PREFIX);
+            violations.forEach(violation -> message.append(violation.getMessage()).append(VALIDATION_ERROR_SEPARATOR));
             return Mono.error(new IllegalArgumentException(message.toString()));
         }
         return Mono.just(request);
@@ -48,8 +56,8 @@ public class Handler {
     private String getOriginOfError(Throwable error) {
         if (error.getStackTrace().length > 0) {
             var origin = error.getStackTrace()[0];
-            return origin.getClassName() + "." + origin.getMethodName() + " (line " + origin.getLineNumber() + ")";
+            return String.format(CLASS_METHOD_LINE_FORMAT, origin.getClassName(), origin.getMethodName(), origin.getLineNumber());
         }
-        return "Unknown origin";
+        return UNKNOWN_ORIGIN;
     }
 }

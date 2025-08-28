@@ -18,6 +18,12 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
 
+    private static final String LOAN_TYPE_NOT_FOUND_MESSAGE = "Loan type not found: ";
+    private static final String AMOUNT_BELOW_MINIMUM_MESSAGE = "Amount %.2f is below minimum %.2f for loan type %s";
+    private static final String AMOUNT_EXCEEDS_MAXIMUM_MESSAGE = "Amount %.2f exceeds maximum %.2f for loan type %s";
+    private static final String PENDING_REVIEW_STATE_NAME = "Pending review";
+    private static final String PENDING_REVIEW_STATE_NOT_FOUND_MESSAGE = "Pending review state not found";
+
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanTypeRepository loanTypeRepository;
     private final StateRepository stateRepository;
@@ -25,7 +31,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
     @Override
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication) {
         return loanTypeRepository.findById(loanApplication.getLoanTypeId())
-                .switchIfEmpty(Mono.error(new LoanTypeNotFoundException("Loan type not found: " + loanApplication.getLoanTypeId())))
+                .switchIfEmpty(Mono.error(new LoanTypeNotFoundException(LOAN_TYPE_NOT_FOUND_MESSAGE + loanApplication.getLoanTypeId())))
                 .flatMap(loanType -> validateLoanAmount(loanApplication.getAmount(), loanType))
                 .flatMap(loanType -> getPendingReviewState()
                         .map(state -> LoanApplication.builder()
@@ -42,20 +48,20 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
     private Mono<LoanType> validateLoanAmount(BigDecimal amount, LoanType loanType) {
         if (amount.compareTo(loanType.getMinAmount()) < 0) {
             return Mono.error(new InvalidLoanAmountException(
-                String.format("Amount %.2f is below minimum %.2f for loan type %s",
+                String.format(AMOUNT_BELOW_MINIMUM_MESSAGE,
                     amount, loanType.getMinAmount(), loanType.getName())));
         }
         if (amount.compareTo(loanType.getMaxAmount()) > 0) {
             return Mono.error(new InvalidLoanAmountException(
-                String.format("Amount %.2f exceeds maximum %.2f for loan type %s",
+                String.format(AMOUNT_EXCEEDS_MAXIMUM_MESSAGE,
                     amount, loanType.getMaxAmount(), loanType.getName())));
         }
         return Mono.just(loanType);
     }
 
     private Mono<State> getPendingReviewState() {
-        return stateRepository.findByName("Pending review")
-                .switchIfEmpty(Mono.error(new StateNotFoundException("Pending review state not found")));
+        return stateRepository.findByName(PENDING_REVIEW_STATE_NAME)
+                .switchIfEmpty(Mono.error(new StateNotFoundException(PENDING_REVIEW_STATE_NOT_FOUND_MESSAGE)));
     }
 
 }
