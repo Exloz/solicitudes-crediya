@@ -1,5 +1,6 @@
 package co.com.bancolombia.api;
 
+import co.com.bancolombia.api.config.GlobalExceptionHandler;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
 import co.com.bancolombia.usecase.loanapplication.LoanApplicationUseCasePort;
@@ -40,7 +41,8 @@ public class Handler {
                 .map(mapper::toResponse)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
                 .doOnSuccess(response -> log.info(LOAN_APPLICATION_REGISTERED_LOG))
-                .doOnError(error -> log.error(ERROR_REGISTERING_LOAN_APPLICATION_LOG, getOriginOfError(error)));
+                .doOnError(error -> log.error(ERROR_REGISTERING_LOAN_APPLICATION_LOG, getOriginOfError(error)))
+                .onErrorResume(GlobalExceptionHandler::handleException);
     }
 
     private Mono<LoanApplicationRequest> validateRequest(LoanApplicationRequest request) {
