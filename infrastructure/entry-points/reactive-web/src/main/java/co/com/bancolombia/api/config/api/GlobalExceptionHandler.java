@@ -1,4 +1,4 @@
-package co.com.bancolombia.api.config;
+package co.com.bancolombia.api.config.api;
 
 import co.com.bancolombia.model.exception.business.InvalidLoanAmountException;
 import co.com.bancolombia.model.exception.business.LoanApplicationNotFoundException;

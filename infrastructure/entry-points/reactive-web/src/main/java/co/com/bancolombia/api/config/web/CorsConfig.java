@@ -1,4 +1,4 @@
-package co.com.bancolombia.api.config;
+package co.com.bancolombia.api.config.web;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
