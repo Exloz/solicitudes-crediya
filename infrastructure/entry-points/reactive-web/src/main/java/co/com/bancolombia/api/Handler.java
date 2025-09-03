@@ -3,6 +3,7 @@ package co.com.bancolombia.api;
 import co.com.bancolombia.api.config.GlobalExceptionHandler;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
+import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
 import co.com.bancolombia.usecase.loanapplication.LoanApplicationUseCasePort;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -27,21 +28,27 @@ public class Handler {
     private static final String VALIDATION_ERROR_SEPARATOR = "; ";
     private static final String UNKNOWN_ORIGIN = "Unknown origin";
     private static final String CLASS_METHOD_LINE_FORMAT = "%s.%s (line %d)";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String MISSING_AUTHORIZATION_HEADER = "Missing Authorization header";
+    private static final String INVALID_AUTHORIZATION_HEADER = "Invalid Authorization header format";
 
     private final LoanApplicationUseCasePort loanApplicationUseCase;
     private final Validator validator;
     private final LoanApplicationMapper mapper;
 
     public Mono<ServerResponse> registerLoanApplication(ServerRequest serverRequest) {
-        return serverRequest.bodyToMono(LoanApplicationRequest.class)
-                .doOnNext(request -> log.info(RECEIVED_LOAN_APPLICATION_LOG, request))
-                .flatMap(this::validateRequest)
-                .map(mapper::toModel)
-                .flatMap(loanApplicationUseCase::registerLoanApplication)
-                .map(mapper::toResponse)
-                .flatMap(response -> ServerResponse.ok().bodyValue(response))
-                .doOnSuccess(response -> log.info(LOAN_APPLICATION_REGISTERED_LOG))
-                .doOnError(error -> log.error(ERROR_REGISTERING_LOAN_APPLICATION_LOG, getOriginOfError(error)))
+        return Mono.fromCallable(() -> extractJwtToken(serverRequest))
+                .flatMap(jwtToken -> serverRequest.bodyToMono(LoanApplicationRequest.class)
+                        .doOnNext(request -> log.info(RECEIVED_LOAN_APPLICATION_LOG, request))
+                        .flatMap(this::validateRequest)
+                        .map(mapper::toModel)
+                        .flatMap(loanApplication -> loanApplicationUseCase.registerLoanApplication(loanApplication, jwtToken))
+                        .map(mapper::toResponse)
+                        .flatMap(response -> ServerResponse.ok().bodyValue(response))
+                        .doOnSuccess(response -> log.info(LOAN_APPLICATION_REGISTERED_LOG))
+                        .doOnError(error -> log.error(ERROR_REGISTERING_LOAN_APPLICATION_LOG, getOriginOfError(error)))
+                )
                 .onErrorResume(GlobalExceptionHandler::handleException);
     }
 
@@ -53,6 +60,20 @@ public class Handler {
             return Mono.error(new IllegalArgumentException(message.toString()));
         }
         return Mono.just(request);
+    }
+
+    private String extractJwtToken(ServerRequest serverRequest) {
+        String authHeader = serverRequest.headers().firstHeader(AUTHORIZATION_HEADER);
+
+        if (authHeader == null || authHeader.trim().isEmpty()) {
+            throw new MissingAuthorizationHeaderException(MISSING_AUTHORIZATION_HEADER);
+        }
+
+        if (!authHeader.startsWith(BEARER_PREFIX)) {
+            throw new MissingAuthorizationHeaderException(INVALID_AUTHORIZATION_HEADER);
+        }
+
+        return authHeader.substring(BEARER_PREFIX.length());
     }
 
     private String getOriginOfError(Throwable error) {

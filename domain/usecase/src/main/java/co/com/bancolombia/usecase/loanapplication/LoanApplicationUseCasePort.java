@@ -5,5 +5,5 @@ import reactor.core.publisher.Mono;
 
 public interface LoanApplicationUseCasePort {
 
-    Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication);
+    Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication, String jwtToken);
 }

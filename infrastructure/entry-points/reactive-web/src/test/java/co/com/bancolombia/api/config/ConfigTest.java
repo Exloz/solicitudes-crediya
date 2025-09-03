@@ -37,13 +37,14 @@ class ConfigTest {
     void securityHeadersShouldBePresent() {
         // Mock the use case to avoid dependency issues
         when(validator.validate(any())).thenReturn(java.util.Collections.emptySet());
-        when(loanApplicationUseCase.registerLoanApplication(any(LoanApplication.class)))
+        when(loanApplicationUseCase.registerLoanApplication(any(LoanApplication.class), any(String.class)))
                 .thenReturn(Mono.just(LoanApplication.builder().build()));
 
         // Test with POST request to check security headers
         webTestClient.post()
                 .uri("/api/v1/solicitud")
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer valid.jwt.token")
                 .bodyValue("{}")
                 .exchange()
                 .expectStatus().isOk() // Endpoint processes the request successfully

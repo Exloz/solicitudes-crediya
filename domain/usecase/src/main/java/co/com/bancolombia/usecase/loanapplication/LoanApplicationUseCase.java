@@ -1,13 +1,14 @@
 package co.com.bancolombia.usecase.loanapplication;
 
+import co.com.bancolombia.model.user.UserValidator;
 import co.com.bancolombia.model.loanapplication.LoanApplication;
 import co.com.bancolombia.model.loanapplication.gateways.LoanApplicationRepository;
-import co.com.bancolombia.model.exception.InvalidLoanAmountException;
+import co.com.bancolombia.model.exception.business.InvalidLoanAmountException;
+import co.com.bancolombia.model.exception.business.LoanTypeNotFoundException;
+import co.com.bancolombia.model.exception.business.StateNotFoundException;
 import co.com.bancolombia.model.loantype.LoanType;
-import co.com.bancolombia.model.exception.LoanTypeNotFoundException;
 import co.com.bancolombia.model.loantype.gateways.LoanTypeRepository;
 import co.com.bancolombia.model.state.State;
-import co.com.bancolombia.model.exception.StateNotFoundException;
 import co.com.bancolombia.model.state.gateways.StateRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -27,22 +28,28 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanTypeRepository loanTypeRepository;
     private final StateRepository stateRepository;
+    private final UserValidator userValidator;
 
     @Override
-    public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication) {
-        return loanTypeRepository.findById(loanApplication.getLoanTypeId())
-                .switchIfEmpty(Mono.error(new LoanTypeNotFoundException(LOAN_TYPE_NOT_FOUND_MESSAGE + loanApplication.getLoanTypeId())))
-                .flatMap(loanType -> validateLoanAmount(loanApplication.getAmount(), loanType))
-                .flatMap(loanType -> getPendingReviewState()
-                        .map(state -> LoanApplication.builder()
-                                .clientId(loanApplication.getClientId())
-                                .amount(loanApplication.getAmount())
-                                .term(loanApplication.getTerm())
-                                .loanTypeId(loanApplication.getLoanTypeId())
-                                .status(state.getId())
-                                .createdAt(LocalDateTime.now())
-                                .build()))
-                .flatMap(loanApplicationRepository::saveLoanApplication);
+    public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication, String jwtToken) {
+        // First validate that the user exists and the token is valid
+        return userValidator.validateUserExists(loanApplication.getClientId(), jwtToken)
+                .flatMap(userInfo -> {
+                    // User exists, continue with loan application logic
+                    return loanTypeRepository.findById(loanApplication.getLoanTypeId())
+                            .switchIfEmpty(Mono.error(new LoanTypeNotFoundException(LOAN_TYPE_NOT_FOUND_MESSAGE + loanApplication.getLoanTypeId())))
+                            .flatMap(loanType -> validateLoanAmount(loanApplication.getAmount(), loanType))
+                            .flatMap(loanType -> getPendingReviewState()
+                                    .map(state -> LoanApplication.builder()
+                                            .clientId(loanApplication.getClientId())
+                                            .amount(loanApplication.getAmount())
+                                            .term(loanApplication.getTerm())
+                                            .loanTypeId(loanApplication.getLoanTypeId())
+                                            .status(state.getId())
+                                            .createdAt(LocalDateTime.now())
+                                            .build()))
+                            .flatMap(loanApplicationRepository::saveLoanApplication);
+                });
     }
 
     private Mono<LoanType> validateLoanAmount(BigDecimal amount, LoanType loanType) {

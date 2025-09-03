@@ -1,9 +1,14 @@
 package co.com.bancolombia.api.config;
 
-import co.com.bancolombia.model.exception.InvalidLoanAmountException;
-import co.com.bancolombia.model.exception.LoanApplicationNotFoundException;
-import co.com.bancolombia.model.exception.LoanTypeNotFoundException;
-import co.com.bancolombia.model.exception.StateNotFoundException;
+import co.com.bancolombia.model.exception.business.InvalidLoanAmountException;
+import co.com.bancolombia.model.exception.business.LoanApplicationNotFoundException;
+import co.com.bancolombia.model.exception.business.LoanTypeNotFoundException;
+import co.com.bancolombia.model.exception.business.StateNotFoundException;
+import co.com.bancolombia.model.exception.security.ExpiredJwtTokenException;
+import co.com.bancolombia.model.exception.security.InsufficientPrivilegesException;
+import co.com.bancolombia.model.exception.security.InvalidJwtTokenException;
+import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
+import co.com.bancolombia.model.exception.security.UserIdMismatchException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -27,11 +32,18 @@ public class GlobalExceptionHandler {
     private static final String NOT_FOUND_ERROR = "Not Found";
     private static final String INTERNAL_SERVER_ERROR = "Internal Server Error";
     private static final String INTERNAL_SERVER_ERROR_MESSAGE = "An unexpected error occurred";
+    private static final String UNAUTHORIZED_ERROR = "Unauthorized";
+    private static final String FORBIDDEN_ERROR = "Forbidden";
 
     public static Mono<ServerResponse> handleException(Throwable throwable) {
         log.error(EXCEPTION_LOG_MESSAGE, throwable.getMessage());
 
         return switch (throwable) {
+            case InvalidJwtTokenException ignored -> handleUnauthorized(throwable.getMessage());
+            case ExpiredJwtTokenException ignored -> handleUnauthorized(throwable.getMessage());
+            case MissingAuthorizationHeaderException ignored -> handleUnauthorized(throwable.getMessage());
+            case InsufficientPrivilegesException ignored -> handleForbidden(throwable.getMessage());
+            case UserIdMismatchException ignored -> handleForbidden(throwable.getMessage());
             case InvalidLoanAmountException ignored -> handleBadRequest(throwable.getMessage());
             case LoanTypeNotFoundException ignored -> handleBadRequest(throwable.getMessage());
             case StateNotFoundException ignored -> handleBadRequest(throwable.getMessage());
@@ -78,6 +90,28 @@ public class GlobalExceptionHandler {
         error.put(STATUS_KEY, HttpStatus.NOT_FOUND.value());
 
         return ServerResponse.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(error);
+    }
+
+    private static Mono<ServerResponse> handleUnauthorized(String message) {
+        Map<String, Object> error = new HashMap<>();
+        error.put(ERROR_KEY, UNAUTHORIZED_ERROR);
+        error.put(MESSAGE_KEY, message);
+        error.put(STATUS_KEY, HttpStatus.UNAUTHORIZED.value());
+
+        return ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(error);
+    }
+
+    private static Mono<ServerResponse> handleForbidden(String message) {
+        Map<String, Object> error = new HashMap<>();
+        error.put(ERROR_KEY, FORBIDDEN_ERROR);
+        error.put(MESSAGE_KEY, message);
+        error.put(STATUS_KEY, HttpStatus.FORBIDDEN.value());
+
+        return ServerResponse.status(HttpStatus.FORBIDDEN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(error);
     }

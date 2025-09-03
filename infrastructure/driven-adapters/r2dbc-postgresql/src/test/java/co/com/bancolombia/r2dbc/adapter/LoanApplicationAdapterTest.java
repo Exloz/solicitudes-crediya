@@ -8,9 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.reactivecommons.utils.ObjectMapper;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import static org.mockito.ArgumentMatchers.any;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,12 +30,16 @@ class LoanApplicationAdapterTest {
     @Mock
     private ObjectMapper mapper;
 
+    @Mock
+    private TransactionalOperator transactionalOperator;
+
     private LoanApplicationAdapter adapter;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        adapter = new LoanApplicationAdapter(repository, mapper);
+        when(transactionalOperator.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        adapter = new LoanApplicationAdapter(repository, mapper, transactionalOperator);
     }
 
     @Test
