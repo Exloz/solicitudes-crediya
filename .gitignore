@@ -336,3 +336,7 @@ gradle-app.setting
 build-cache
 /STARTUP.md
 /.env
+
+# Exclude markdown and PEM files as requested
+*.md
+*.pem

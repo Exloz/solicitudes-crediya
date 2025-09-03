@@ -1,5 +1,9 @@
 package co.com.bancolombia.model.exception;
 
+import co.com.bancolombia.model.exception.business.InvalidLoanAmountException;
+import co.com.bancolombia.model.exception.business.LoanApplicationNotFoundException;
+import co.com.bancolombia.model.exception.business.LoanTypeNotFoundException;
+import co.com.bancolombia.model.exception.business.StateNotFoundException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

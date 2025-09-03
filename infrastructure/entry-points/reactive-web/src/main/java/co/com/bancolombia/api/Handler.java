@@ -1,6 +1,6 @@
 package co.com.bancolombia.api;
 
-import co.com.bancolombia.api.config.GlobalExceptionHandler;
+import co.com.bancolombia.api.config.api.GlobalExceptionHandler;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
 import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
