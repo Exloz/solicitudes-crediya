@@ -1,4 +1,4 @@
-package co.com.bancolombia.r2dbc;
+package co.com.bancolombia.r2dbc.repository.impl;
 
 import co.com.bancolombia.r2dbc.entity.LoanTypeEntity;
 import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;

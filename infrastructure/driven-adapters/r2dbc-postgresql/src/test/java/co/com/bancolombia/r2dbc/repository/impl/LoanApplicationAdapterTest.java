@@ -1,7 +1,9 @@
 package co.com.bancolombia.r2dbc.adapter;
 
+package co.com.bancolombia.r2dbc.repository.impl;
+
 import co.com.bancolombia.model.loanapplication.LoanApplication;
-import co.com.bancolombia.r2dbc.LoanApplicationRepositoryR2dbc;
+import co.com.bancolombia.r2dbc.repository.impl.LoanApplicationRepositoryR2dbc;
 import co.com.bancolombia.r2dbc.entity.LoanApplicationEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

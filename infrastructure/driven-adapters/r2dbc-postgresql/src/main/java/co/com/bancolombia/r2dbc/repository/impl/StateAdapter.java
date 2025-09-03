@@ -1,8 +1,8 @@
-package co.com.bancolombia.r2dbc.adapter;
+package co.com.bancolombia.r2dbc.repository.impl;
 
 import co.com.bancolombia.model.state.State;
 import co.com.bancolombia.model.state.gateways.StateRepository;
-import co.com.bancolombia.r2dbc.StateRepositoryR2dbc;
+import co.com.bancolombia.r2dbc.repository.impl.StateRepositoryR2dbc;
 import co.com.bancolombia.r2dbc.entity.StateEntity;
 import co.com.bancolombia.r2dbc.helper.ReactiveAdapterOperations;
 import org.reactivecommons.utils.ObjectMapper;
