@@ -1,4 +1,4 @@
-package co.com.bancolombia.consumer;
+package co.com.bancolombia.consumer.service;
 
 import co.com.bancolombia.model.exception.security.ExpiredJwtTokenException;
 import co.com.bancolombia.model.exception.security.InvalidJwtTokenException;

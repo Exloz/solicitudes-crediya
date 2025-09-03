@@ -1,5 +1,7 @@
-package co.com.bancolombia.consumer;
+package co.com.bancolombia.consumer.client;
 
+import co.com.bancolombia.consumer.dto.UserInfoRes;
+import co.com.bancolombia.consumer.service.JwtService;
 import co.com.bancolombia.model.exception.security.InsufficientPrivilegesException;
 import co.com.bancolombia.model.exception.security.UserIdMismatchException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;

@@ -1,5 +1,7 @@
-package co.com.bancolombia.consumer;
+package co.com.bancolombia.consumer.adapter;
 
+import co.com.bancolombia.consumer.client.RestConsumer;
+import co.com.bancolombia.consumer.dto.UserInfoRes;
 import co.com.bancolombia.model.user.UserInfo;
 import co.com.bancolombia.model.user.UserValidator;
 import lombok.RequiredArgsConstructor;

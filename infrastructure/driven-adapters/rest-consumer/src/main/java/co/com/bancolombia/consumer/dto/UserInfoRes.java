@@ -1,5 +1,6 @@
-package co.com.bancolombia.consumer;
+package co.com.bancolombia.consumer.dto;
 
+import co.com.bancolombia.consumer.enums.RoleId;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;

@@ -1,6 +1,7 @@
-package co.com.bancolombia.consumer;
+package co.com.bancolombia.consumer.client;
 
 
+import co.com.bancolombia.consumer.service.JwtService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
