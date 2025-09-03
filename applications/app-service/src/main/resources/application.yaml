@@ -13,12 +13,12 @@ spring:
     include: null
 adapters:
   r2dbc:
-    host: ${DB_HOST:localhost}
-    port: ${DB_PORT:5433}
-    database: ${DB_NAME:solicitudes_db}
-    schema: public
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:password123}
+    host: "${DB_HOST:localhost}"
+    port: "${DB_PORT:5433}"
+    database: "${DB_NAME:solicitudes_db}"
+    schema: "public"
+    username: "${DB_USER:postgres}"
+    password: "${DB_PASSWORD:password123}"
 management:
   endpoints:
     web:
@@ -28,11 +28,39 @@ management:
     health:
       probes:
         enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
 cors:
   allowed-origins: "*"
 springdoc:
   api-docs:
-    path: /api-docs
+    path: "/api-docs"
   swagger-ui:
-    path: /swagger-ui.html
-    operationsSorter: method
+    path: "/swagger-ui.html"
+    operationsSorter: "method"
+adapter:
+  restconsumer:
+    timeout: 5000
+    url: "http://localhost:8080"
+resilience4j:
+  circuitbreaker:
+    instances:
+      testGet:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: "2s"
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: "10s"
+      testPost:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: "2s"
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: "10s"
