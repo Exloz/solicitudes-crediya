@@ -11,6 +11,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -39,6 +40,12 @@ public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplic
     @Override
     public Flux<LoanApplication> findByClientId(String clientId) {
         return repository.findByClientId(clientId)
+                .map(this::toEntity);
+    }
+
+    @Override
+    public Flux<LoanApplication> findByStatuses(List<String> statusNames, int limit, long offset) {
+        return repository.findByStatuses(statusNames, limit, offset)
                 .map(this::toEntity);
     }
 }

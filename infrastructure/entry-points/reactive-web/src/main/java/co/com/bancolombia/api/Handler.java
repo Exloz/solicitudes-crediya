@@ -2,7 +2,9 @@ package co.com.bancolombia.api;
 
 import co.com.bancolombia.api.config.api.GlobalExceptionHandler;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
+import co.com.bancolombia.api.dto.LoanApplicationReviewResponse;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
+import co.com.bancolombia.consumer.service.AuthorizationService;
 import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
 import co.com.bancolombia.usecase.loanapplication.LoanApplicationUseCasePort;
 import jakarta.validation.ConstraintViolation;
@@ -33,9 +35,17 @@ public class Handler {
     private static final String MISSING_AUTHORIZATION_HEADER = "Missing Authorization header";
     private static final String INVALID_AUTHORIZATION_HEADER = "Invalid Authorization header format";
 
+    private static final String RECEIVED_REVIEW_REQUEST_LOG = "Received review request with page: {}, size: {}";
+    private static final String REVIEW_REQUEST_PROCESSED_LOG = "Review request processed successfully";
+    private static final String ERROR_PROCESSING_REVIEW_LOG = "Error processing review request on: {}";
+    private static final String DEFAULT_PAGE = "0";
+    private static final String DEFAULT_SIZE = "10";
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final LoanApplicationUseCasePort loanApplicationUseCase;
     private final Validator validator;
     private final LoanApplicationMapper mapper;
+    private final AuthorizationService authorizationService;
 
     public Mono<ServerResponse> registerLoanApplication(ServerRequest serverRequest) {
         return Mono.fromCallable(() -> extractJwtToken(serverRequest))
@@ -50,6 +60,63 @@ public class Handler {
                         .doOnError(error -> log.error(ERROR_REGISTERING_LOAN_APPLICATION_LOG, getOriginOfError(error)))
                 )
                 .onErrorResume(GlobalExceptionHandler::handleException);
+    }
+
+    public Mono<ServerResponse> getLoanApplicationsForReview(ServerRequest serverRequest) {
+        return Mono.fromCallable(() -> extractJwtToken(serverRequest))
+                .flatMap(this::validateJwtAndRole)
+                .flatMap(validToken -> processReviewRequest(serverRequest, validToken))
+                .onErrorResume(GlobalExceptionHandler::handleException);
+    }
+
+    private Mono<String> validateJwtAndRole(String jwtToken) {
+        return authorizationService.validateAdvisorOrAdminAccess(jwtToken)
+                .thenReturn(jwtToken);
+    }
+
+    private Mono<ServerResponse> processReviewRequest(ServerRequest serverRequest, String jwtToken) {
+        var pagination = extractPaginationParameters(serverRequest);
+
+        log.info(RECEIVED_REVIEW_REQUEST_LOG, pagination.page(), pagination.size());
+
+        return loanApplicationUseCase.getLoanApplicationsForReview(jwtToken, pagination.page(), pagination.size())
+                .map(this::mapToReviewResponse)
+                .collectList()
+                .flatMap(applications -> ServerResponse.ok().bodyValue(applications))
+                .doOnSuccess(response -> log.info(REVIEW_REQUEST_PROCESSED_LOG))
+                .doOnError(error -> log.error(ERROR_PROCESSING_REVIEW_LOG, getOriginOfError(error)));
+    }
+
+    private PaginationParameters extractPaginationParameters(ServerRequest serverRequest) {
+        int page = Integer.parseInt(serverRequest.queryParam("page").orElse(DEFAULT_PAGE));
+        int size = Integer.parseInt(serverRequest.queryParam("size").orElse(DEFAULT_SIZE));
+
+        if (size > MAX_PAGE_SIZE) {
+            size = MAX_PAGE_SIZE;
+        }
+        if (page < 0) {
+            page = 0;
+        }
+
+        return new PaginationParameters(page, size);
+    }
+
+    private record PaginationParameters(int page, int size) {}
+
+    private LoanApplicationReviewResponse mapToReviewResponse(co.com.bancolombia.usecase.loanapplication.LoanApplicationReviewDto dto) {
+        return LoanApplicationReviewResponse.builder()
+                .id(dto.getId())
+                .amount(dto.getAmount())
+                .term(dto.getTerm())
+                .email(dto.getEmail())
+                .fullName(dto.getFullName())
+                .loanType(dto.getLoanType())
+                .interestRate(dto.getInterestRate())
+                .applicationStatus(dto.getApplicationStatus())
+                .baseSalary(dto.getBaseSalary())
+                .totalMonthlyDebtFromApprovedApplications(dto.getTotalMonthlyDebtFromApprovedApplications())
+                .createdAt(dto.getCreatedAt())
+                .build();
     }
 
     private Mono<LoanApplicationRequest> validateRequest(LoanApplicationRequest request) {
