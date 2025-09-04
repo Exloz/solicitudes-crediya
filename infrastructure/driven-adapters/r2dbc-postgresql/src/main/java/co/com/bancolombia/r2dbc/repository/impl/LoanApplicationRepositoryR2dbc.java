@@ -13,10 +13,10 @@ public interface LoanApplicationRepositoryR2dbc extends ReactiveCrudRepository<L
 
     Flux<LoanApplicationEntity> findByClientId(String clientId);
 
-    @Query("SELECT la.* FROM loan_applications la " +
-           "JOIN states s ON la.status = s.id " +
-           "WHERE s.name IN (:statusNames) " +
+    @Query("SELECT la.* FROM loan_application la " +
+           "JOIN state s ON la.status = s.id " +
+           "WHERE s.name = $1 " +
            "ORDER BY la.created_at DESC " +
-           "LIMIT :limit OFFSET :offset")
-    Flux<LoanApplicationEntity> findByStatuses(List<String> statusNames, int limit, long offset);
+           "LIMIT $2 OFFSET $3")
+    Flux<LoanApplicationEntity> findByStatus(String statusName, int limit, long offset);
 }

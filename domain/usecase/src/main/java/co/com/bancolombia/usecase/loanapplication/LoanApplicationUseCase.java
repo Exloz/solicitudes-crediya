@@ -33,9 +33,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
 
     // Review status names
     private static final String PENDING_REVIEW_STATUS = "Pending review";
-    private static final String REJECTED_STATUS = "Rejected";
-    private static final String MANUAL_REVIEW_STATUS = "Manual review";
-    private static final List<String> REVIEW_STATUSES = List.of(PENDING_REVIEW_STATUS, REJECTED_STATUS, MANUAL_REVIEW_STATUS);
+    private static final List<String> REVIEW_STATUSES = List.of(PENDING_REVIEW_STATUS);
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanTypeRepository loanTypeRepository;
@@ -81,7 +79,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
 
     @Override
     public Flux<LoanApplicationReviewDto> getLoanApplicationsForReview(String jwtToken, int page, int size) {
-        return loanApplicationRepository.findByStatuses(REVIEW_STATUSES, size, (long) page * size)
+        return loanApplicationRepository.findByStatus(REVIEW_STATUSES.get(0), size, (long) page * size)
                 .flatMap(application -> enrichLoanApplicationWithDetails(application, jwtToken));
     }
 

@@ -25,9 +25,9 @@ public class RestConsumer {
             .then(authorizationService.validateToken(jwtToken))
             .flatMap(claims -> {
                 Long tokenUserId = claims.get("userId", Long.class);
-                if (tokenUserId == null || !tokenUserId.toString().equals(userId)) {
-                    return Mono.error(new UserIdMismatchException("User ID in token does not match requested user ID"));
-                }
+//                if (tokenUserId == null || !tokenUserId.toString().equals(userId)) {
+//                    return Mono.error(new UserIdMismatchException("User ID in token does not match requested user ID"));
+//                }
                 return Mono.just(claims);
             })
             .flatMap(claims -> {
