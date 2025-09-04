@@ -1,5 +1,6 @@
 package co.com.bancolombia.consumer.service;
 
+import co.com.bancolombia.consumer.enums.RoleId;
 import co.com.bancolombia.model.exception.security.InsufficientPrivilegesException;
 import co.com.bancolombia.model.exception.security.InvalidJwtTokenException;
 import io.jsonwebtoken.Claims;
@@ -15,12 +16,6 @@ public class AuthorizationService {
 
     private final JwtService jwtService;
 
-    private static final String ROLE_ADMIN = "Admin";
-    private static final String ROLE_MANAGER = "Manager";
-    private static final String ROLE_ADVISOR = "Advisor";
-    private static final String ROLE_USER = "USER";
-    private static final String ERROR_PERMISSION_PROFILE = "User does not have permission to access this profile";
-    private static final String ERROR_PERMISSION_LOAN = "User does not have permission to access this loan application";
     private static final String ERROR_ROLE_NOT_FOUND = "Role not found in JWT token";
     private static final String ERROR_USERID_NOT_FOUND = "User ID not found in JWT token";
     private static final String ERROR_REQUIRED_ROLE = "User does not have required role: %s";
@@ -101,57 +96,7 @@ public class AuthorizationService {
                 });
     }
 
-    public Mono<Void> validateAdminOrManagerAccess(String jwtToken) {
-        return validateTokenAndAnyRole(jwtToken, ROLE_ADMIN, ROLE_MANAGER);
-    }
-
-    public Mono<Void> validateUserProfileAccess(String jwtToken, String requestedUserId) {
-        return validateToken(jwtToken)
-                .flatMap(claims -> {
-                    Long tokenUserId = claims.get("userId", Long.class);
-                    String userRole = claims.get("role", String.class);
-
-                    if (ROLE_ADMIN.equals(userRole)) {
-                        return Mono.empty();
-                    }
-
-                    if (tokenUserId != null && tokenUserId.toString().equals(requestedUserId)) {
-                        return Mono.empty();
-                    }
-
-                    return Mono.error(new InsufficientPrivilegesException(
-                        ERROR_PERMISSION_PROFILE));
-                });
-    }
-
-    public Mono<Void> validateLoanApplicationAccess(String jwtToken, String clientId) {
-        return validateToken(jwtToken)
-                .flatMap(claims -> {
-                    Long tokenUserId = claims.get("userId", Long.class);
-                    String userRole = claims.get("role", String.class);
-
-                    if (ROLE_ADVISOR.equals(userRole)) {
-                        return Mono.empty();
-                    }
-
-                    if (tokenUserId != null && tokenUserId.toString().equals(clientId)) {
-                        return Mono.empty();
-                    }
-
-                    return Mono.error(new InsufficientPrivilegesException(
-                        ERROR_PERMISSION_LOAN));
-                });
-    }
-
-    public Mono<Void> validateCustomerAccess(String jwtToken) {
-        return validateTokenAndRole(jwtToken, ROLE_USER);
-    }
-
-    public Mono<Void> validateAdminAccess(String jwtToken) {
-        return validateTokenAndRole(jwtToken, ROLE_ADMIN);
-    }
-
     public Mono<Void> validateAdvisorOrAdminAccess(String jwtToken) {
-        return validateTokenAndAnyRole(jwtToken, ROLE_ADVISOR, ROLE_ADMIN);
+        return validateTokenAndAnyRole(jwtToken, RoleId.ADMIN.name(), RoleId.ADVISOR.name());
     }
 }
