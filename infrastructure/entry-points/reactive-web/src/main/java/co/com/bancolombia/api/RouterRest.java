@@ -3,10 +3,12 @@ package co.com.bancolombia.api;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
 import co.com.bancolombia.api.dto.LoanApplicationResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springdoc.core.annotations.RouterOperations;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +34,8 @@ public class RouterRest {
     private static final String RESPONSE_NOT_FOUND_DESCRIPTION = "Loan type not found";
     private static final String RESPONSE_UNPROCESSABLE_ENTITY_DESCRIPTION = "Loan amount outside allowed limits";
     private static final String RESPONSE_INTERNAL_SERVER_ERROR_DESCRIPTION = "Internal server error";
+    private static final String RESPONSE_UNAUTHORIZED_DESCRIPTION = "Unauthorized - Invalid or missing JWT token";
+    private static final String RESPONSE_FORBIDDEN_DESCRIPTION = "Forbidden - Insufficient privileges or user ID mismatch";
 
     @Bean
     @RouterOperations({
@@ -39,7 +43,10 @@ public class RouterRest {
                     produces = { MediaType.APPLICATION_JSON_VALUE }, method = RequestMethod.POST, beanClass = Handler.class, beanMethod = "registerLoanApplication",
                     operation = @Operation( operationId = CREATE_LOAN_APPLICATION_OPERATION_ID,
                             summary = REGISTER_LOAN_APPLICATION_SUMMARY,
-                            description = REGISTER_LOAN_APPLICATION_DESCRIPTION,
+                            description = REGISTER_LOAN_APPLICATION_DESCRIPTION + ". Requires USER role and valid JWT token.",
+                            parameters = {
+                                @Parameter(name = "Authorization", description = "JWT token with Bearer prefix", required = true, example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+                            },
                             requestBody = @RequestBody(
                                 description = REQUEST_BODY_DESCRIPTION,
                                 required = true,
@@ -49,6 +56,8 @@ public class RouterRest {
                                 @ApiResponse(responseCode = "201", description = RESPONSE_CREATED_DESCRIPTION,
                                     content = @Content(schema = @Schema(implementation = LoanApplicationResponse.class))),
                                 @ApiResponse(responseCode = "400", description = RESPONSE_BAD_REQUEST_DESCRIPTION),
+                                @ApiResponse(responseCode = "401", description = RESPONSE_UNAUTHORIZED_DESCRIPTION),
+                                @ApiResponse(responseCode = "403", description = RESPONSE_FORBIDDEN_DESCRIPTION),
                                 @ApiResponse(responseCode = "404", description = RESPONSE_NOT_FOUND_DESCRIPTION),
                                 @ApiResponse(responseCode = "422", description = RESPONSE_UNPROCESSABLE_ENTITY_DESCRIPTION),
                                 @ApiResponse(responseCode = "500", description = RESPONSE_INTERNAL_SERVER_ERROR_DESCRIPTION)

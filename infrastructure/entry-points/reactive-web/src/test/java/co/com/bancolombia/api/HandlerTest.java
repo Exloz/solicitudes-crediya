@@ -3,7 +3,12 @@ package co.com.bancolombia.api;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
 import co.com.bancolombia.api.dto.LoanApplicationResponse;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
-import co.com.bancolombia.model.exception.InvalidLoanAmountException;
+import co.com.bancolombia.model.exception.business.InvalidLoanAmountException;
+import co.com.bancolombia.model.exception.security.ExpiredJwtTokenException;
+import co.com.bancolombia.model.exception.security.InsufficientPrivilegesException;
+import co.com.bancolombia.model.exception.security.InvalidJwtTokenException;
+import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
+import co.com.bancolombia.model.exception.security.UserIdMismatchException;
 import co.com.bancolombia.model.loanapplication.LoanApplication;
 import co.com.bancolombia.usecase.loanapplication.LoanApplicationUseCasePort;
 import jakarta.validation.ConstraintViolation;
@@ -41,6 +46,9 @@ class HandlerTest {
 
     @Mock
     private ServerRequest serverRequest;
+
+    @Mock
+    private ServerRequest.Headers headers;
 
     private Handler handler;
 
@@ -87,10 +95,14 @@ class HandlerTest {
                 .createdAt(savedModel.getCreatedAt())
                 .build();
 
+        String jwtToken = "Bearer valid.jwt.token";
+
         when(serverRequest.bodyToMono(LoanApplicationRequest.class)).thenReturn(Mono.just(request));
+        when(serverRequest.headers()).thenReturn(headers);
+        when(headers.firstHeader("Authorization")).thenReturn(jwtToken);
         when(validator.validate(request)).thenReturn(new HashSet<>());
         when(mapper.toModel(request)).thenReturn(model);
-        when(loanApplicationUseCase.registerLoanApplication(model)).thenReturn(Mono.just(savedModel));
+        when(loanApplicationUseCase.registerLoanApplication(model, "valid.jwt.token")).thenReturn(Mono.just(savedModel));
         when(mapper.toResponse(savedModel)).thenReturn(response);
 
         // Act
@@ -116,15 +128,17 @@ class HandlerTest {
         violations.add(mock(ConstraintViolation.class));
 
         when(serverRequest.bodyToMono(LoanApplicationRequest.class)).thenReturn(Mono.just(request));
+        when(serverRequest.headers()).thenReturn(headers);
+        when(headers.firstHeader("Authorization")).thenReturn("Bearer valid.jwt.token");
         when(validator.validate(request)).thenReturn(violations);
 
         // Act
         Mono<ServerResponse> result = handler.registerLoanApplication(serverRequest);
 
-        // Assert
+        // Assert - GlobalExceptionHandler converts IllegalArgumentException to BAD_REQUEST
         StepVerifier.create(result)
-                .expectError(IllegalArgumentException.class)
-                .verify();
+                .expectNextMatches(response -> response.statusCode().equals(HttpStatus.BAD_REQUEST))
+                .verifyComplete();
     }
 
     @Test
@@ -145,17 +159,202 @@ class HandlerTest {
                 .build();
 
         when(serverRequest.bodyToMono(LoanApplicationRequest.class)).thenReturn(Mono.just(request));
+        when(serverRequest.headers()).thenReturn(headers);
+        when(headers.firstHeader("Authorization")).thenReturn("Bearer valid.jwt.token");
         when(validator.validate(request)).thenReturn(new HashSet<>());
         when(mapper.toModel(request)).thenReturn(model);
-        when(loanApplicationUseCase.registerLoanApplication(model))
+        // Mock the UseCase to return business logic error after JWT validation
+        when(loanApplicationUseCase.registerLoanApplication(model, "valid.jwt.token"))
                 .thenReturn(Mono.error(new InvalidLoanAmountException("Amount is invalid")));
 
         // Act
         Mono<ServerResponse> result = handler.registerLoanApplication(serverRequest);
 
-        // Assert
+        // Assert - GlobalExceptionHandler converts InvalidLoanAmountException to BAD_REQUEST
         StepVerifier.create(result)
-                .expectError(InvalidLoanAmountException.class)
-                .verify();
+                .expectNextMatches(response -> response.statusCode().equals(HttpStatus.BAD_REQUEST))
+                .verifyComplete();
+    }
+
+    @Test
+    void registerLoanApplication_missingAuthorizationHeader() {
+        // Arrange
+        LoanApplicationRequest request = LoanApplicationRequest.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        when(serverRequest.bodyToMono(LoanApplicationRequest.class)).thenReturn(Mono.just(request));
+        when(serverRequest.headers()).thenReturn(headers);
+        when(headers.firstHeader("Authorization")).thenReturn(null); // Missing header
+
+        // Act
+        Mono<ServerResponse> result = handler.registerLoanApplication(serverRequest);
+
+        // Assert - MissingAuthorizationHeaderException should return 401 Unauthorized
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.statusCode().equals(HttpStatus.UNAUTHORIZED))
+                .verifyComplete();
+    }
+
+    @Test
+    void registerLoanApplication_invalidAuthorizationHeaderFormat() {
+        // Arrange
+        LoanApplicationRequest request = LoanApplicationRequest.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        when(serverRequest.bodyToMono(LoanApplicationRequest.class)).thenReturn(Mono.just(request));
+        when(serverRequest.headers()).thenReturn(headers);
+        when(headers.firstHeader("Authorization")).thenReturn("InvalidFormat"); // Invalid format
+
+        // Act
+        Mono<ServerResponse> result = handler.registerLoanApplication(serverRequest);
+
+        // Assert - MissingAuthorizationHeaderException should return 401 Unauthorized
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.statusCode().equals(HttpStatus.UNAUTHORIZED))
+                .verifyComplete();
+    }
+
+    @Test
+    void registerLoanApplication_invalidJwtToken() {
+        // Arrange
+        LoanApplicationRequest request = LoanApplicationRequest.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        LoanApplication model = LoanApplication.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        when(serverRequest.bodyToMono(LoanApplicationRequest.class)).thenReturn(Mono.just(request));
+        when(serverRequest.headers()).thenReturn(headers);
+        when(headers.firstHeader("Authorization")).thenReturn("Bearer invalid.jwt.token");
+        when(validator.validate(request)).thenReturn(new HashSet<>());
+        when(mapper.toModel(request)).thenReturn(model);
+        when(loanApplicationUseCase.registerLoanApplication(model, "invalid.jwt.token"))
+                .thenReturn(Mono.error(new InvalidJwtTokenException("Invalid JWT signature")));
+
+        // Act
+        Mono<ServerResponse> result = handler.registerLoanApplication(serverRequest);
+
+        // Assert - InvalidJwtTokenException should return 401 Unauthorized
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.statusCode().equals(HttpStatus.UNAUTHORIZED))
+                .verifyComplete();
+    }
+
+    @Test
+    void registerLoanApplication_expiredJwtToken() {
+        // Arrange
+        LoanApplicationRequest request = LoanApplicationRequest.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        LoanApplication model = LoanApplication.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        when(serverRequest.bodyToMono(LoanApplicationRequest.class)).thenReturn(Mono.just(request));
+        when(serverRequest.headers()).thenReturn(headers);
+        when(headers.firstHeader("Authorization")).thenReturn("Bearer expired.jwt.token");
+        when(validator.validate(request)).thenReturn(new HashSet<>());
+        when(mapper.toModel(request)).thenReturn(model);
+        when(loanApplicationUseCase.registerLoanApplication(model, "expired.jwt.token"))
+                .thenReturn(Mono.error(new ExpiredJwtTokenException("JWT token has expired")));
+
+        // Act
+        Mono<ServerResponse> result = handler.registerLoanApplication(serverRequest);
+
+        // Assert - ExpiredJwtTokenException should return 401 Unauthorized
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.statusCode().equals(HttpStatus.UNAUTHORIZED))
+                .verifyComplete();
+    }
+
+    @Test
+    void registerLoanApplication_insufficientPrivileges() {
+        // Arrange
+        LoanApplicationRequest request = LoanApplicationRequest.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        LoanApplication model = LoanApplication.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        when(serverRequest.bodyToMono(LoanApplicationRequest.class)).thenReturn(Mono.just(request));
+        when(serverRequest.headers()).thenReturn(headers);
+        when(headers.firstHeader("Authorization")).thenReturn("Bearer valid.jwt.token");
+        when(validator.validate(request)).thenReturn(new HashSet<>());
+        when(mapper.toModel(request)).thenReturn(model);
+        when(loanApplicationUseCase.registerLoanApplication(model, "valid.jwt.token"))
+                .thenReturn(Mono.error(new InsufficientPrivilegesException("User does not have required USER role")));
+
+        // Act
+        Mono<ServerResponse> result = handler.registerLoanApplication(serverRequest);
+
+        // Assert - InsufficientPrivilegesException should return 403 Forbidden
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.statusCode().equals(HttpStatus.FORBIDDEN))
+                .verifyComplete();
+    }
+
+    @Test
+    void registerLoanApplication_userIdMismatch() {
+        // Arrange
+        LoanApplicationRequest request = LoanApplicationRequest.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        LoanApplication model = LoanApplication.builder()
+                .clientId("client123")
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .build();
+
+        when(serverRequest.bodyToMono(LoanApplicationRequest.class)).thenReturn(Mono.just(request));
+        when(serverRequest.headers()).thenReturn(headers);
+        when(headers.firstHeader("Authorization")).thenReturn("Bearer valid.jwt.token");
+        when(validator.validate(request)).thenReturn(new HashSet<>());
+        when(mapper.toModel(request)).thenReturn(model);
+        when(loanApplicationUseCase.registerLoanApplication(model, "valid.jwt.token"))
+                .thenReturn(Mono.error(new UserIdMismatchException("User ID in token does not match requested user ID")));
+
+        // Act
+        Mono<ServerResponse> result = handler.registerLoanApplication(serverRequest);
+
+        // Assert - UserIdMismatchException should return 403 Forbidden
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.statusCode().equals(HttpStatus.FORBIDDEN))
+                .verifyComplete();
     }
 }

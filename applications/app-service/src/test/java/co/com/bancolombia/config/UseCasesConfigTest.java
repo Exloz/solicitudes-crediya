@@ -3,6 +3,7 @@ package co.com.bancolombia.config;
 import co.com.bancolombia.model.loanapplication.gateways.LoanApplicationRepository;
 import co.com.bancolombia.model.loantype.gateways.LoanTypeRepository;
 import co.com.bancolombia.model.state.gateways.StateRepository;
+import co.com.bancolombia.model.user.UserValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -48,6 +49,11 @@ public class UseCasesConfigTest {
         @Bean
         public StateRepository stateRepository() {
             return mock(StateRepository.class);
+        }
+
+        @Bean
+        public UserValidator userValidator() {
+            return mock(UserValidator.class);
         }
     }
 }

@@ -57,13 +57,14 @@ class RouterRestTest {
                 .build();
 
         when(validator.validate(any())).thenReturn(java.util.Collections.emptySet());
-        when(loanApplicationUseCase.registerLoanApplication(any(LoanApplication.class)))
+        when(loanApplicationUseCase.registerLoanApplication(any(LoanApplication.class), any(String.class)))
                 .thenReturn(Mono.just(savedApplication));
 
         // Act & Assert
         webTestClient.post()
                 .uri("/api/v1/solicitud")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer valid.jwt.token")
                 .bodyValue(request)
                 .exchange()
                 .expectStatus().isOk()
