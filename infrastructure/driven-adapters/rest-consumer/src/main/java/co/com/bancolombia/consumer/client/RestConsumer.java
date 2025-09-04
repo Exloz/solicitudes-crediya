@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class RestConsumer /* implements Gateway from domain */{
+public class RestConsumer {
     private final WebClient client;
     private final JwtService jwtService;
 
@@ -22,12 +22,10 @@ public class RestConsumer /* implements Gateway from domain */{
     public Mono<UserInfoRes> getUserByIdDocument(String userId, String jwtToken) {
         Claims claims = jwtService.validateToken(jwtToken);
 
-        // Validar rol USER
         if (!jwtService.hasRequiredRole(claims, "USER")) {
             return Mono.error(new InsufficientPrivilegesException("User does not have required USER role"));
         }
 
-        // Validar que el userId del token coincida con el solicitado
         if (!jwtService.validateUserIdMatch(claims, userId)) {
             return Mono.error(new UserIdMismatchException("User ID in token does not match requested user ID"));
         }

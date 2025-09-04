@@ -32,10 +32,8 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
 
     @Override
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication, String jwtToken) {
-        // First validate that the user exists and the token is valid
         return userValidator.validateUserExists(loanApplication.getClientId(), jwtToken)
                 .flatMap(userInfo -> {
-                    // User exists, continue with loan application logic
                     return loanTypeRepository.findById(loanApplication.getLoanTypeId())
                             .switchIfEmpty(Mono.error(new LoanTypeNotFoundException(LOAN_TYPE_NOT_FOUND_MESSAGE + loanApplication.getLoanTypeId())))
                             .flatMap(loanType -> validateLoanAmount(loanApplication.getAmount(), loanType))
