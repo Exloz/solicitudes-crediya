@@ -12,7 +12,10 @@ import co.com.bancolombia.model.exception.security.InvalidJwtTokenException;
 import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
 import co.com.bancolombia.model.exception.security.UserIdMismatchException;
 import co.com.bancolombia.model.loanapplication.LoanApplication;
-import co.com.bancolombia.usecase.loanapplication.LoanApplicationReviewDto;
+import co.com.bancolombia.model.loanapplication.LoanApplicationReview;
+import co.com.bancolombia.model.loantype.LoanType;
+import co.com.bancolombia.model.state.State;
+import co.com.bancolombia.model.user.UserInfo;
 import co.com.bancolombia.usecase.loanapplication.LoanApplicationUseCasePort;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -371,17 +374,21 @@ class HandlerTest {
         int page = 0;
         int size = 10;
 
-        LoanApplicationReviewDto reviewDto = LoanApplicationReviewDto.builder()
+        LoanApplicationReview review = LoanApplicationReview.builder()
                 .id(UUID.randomUUID())
                 .amount(new BigDecimal("50000"))
                 .term(12)
-                .email("john.doe@example.com")
-                .fullName("John Doe")
-                .loanType("Personal Loan")
-                .interestRate(new BigDecimal("0.15"))
-                .applicationStatus("Pending review")
-                .baseSalary(new BigDecimal("3000"))
-                .totalMonthlyDebtFromApprovedApplications(new BigDecimal("500"))
+                .loanType(LoanType.builder()
+                        .name("Personal Loan")
+                        .interestRate(new BigDecimal("0.15"))
+                        .build())
+                .state(State.builder()
+                        .name("Pending review")
+                        .build())
+                .userInfo(new UserInfo("user123", "John", "Doe", "john.doe@example.com",
+                        "123456789", "123 Main St", LocalDate.of(1990, 1, 1),
+                        "USER", new BigDecimal("3000")))
+                .totalMonthlyDebt(new BigDecimal("500"))
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -391,7 +398,7 @@ class HandlerTest {
         when(serverRequest.queryParam("size")).thenReturn(java.util.Optional.of(String.valueOf(size)));
         when(authorizationService.validateTokenAndRole(jwtToken, "Advisor")).thenReturn(Mono.empty());
         when(loanApplicationUseCase.getLoanApplicationsForReview(jwtToken, page, size))
-                .thenReturn(Flux.just(reviewDto));
+                .thenReturn(Flux.just(review));
 
         // Act
         Mono<ServerResponse> result = handler.getLoanApplicationsForReview(serverRequest);

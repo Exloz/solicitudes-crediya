@@ -4,6 +4,7 @@ import co.com.bancolombia.api.config.api.GlobalExceptionHandler;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
 import co.com.bancolombia.api.dto.LoanApplicationReviewResponse;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
+import co.com.bancolombia.model.loanapplication.LoanApplicationReview;
 import co.com.bancolombia.consumer.service.AuthorizationService;
 import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
 import co.com.bancolombia.usecase.loanapplication.LoanApplicationUseCasePort;
@@ -80,7 +81,7 @@ public class Handler {
         log.info(RECEIVED_REVIEW_REQUEST_LOG, pagination.page(), pagination.size());
 
         return loanApplicationUseCase.getLoanApplicationsForReview(jwtToken, pagination.page(), pagination.size())
-                .map(this::mapToReviewResponse)
+                .map(mapper::toReviewResponse)
                 .collectList()
                 .flatMap(applications -> ServerResponse.ok().bodyValue(applications))
                 .doOnSuccess(response -> log.info(REVIEW_REQUEST_PROCESSED_LOG))
@@ -97,27 +98,12 @@ public class Handler {
         if (page < 0) {
             page = 0;
         }
-
         return new PaginationParameters(page, size);
     }
 
     private record PaginationParameters(int page, int size) {}
 
-    private LoanApplicationReviewResponse mapToReviewResponse(co.com.bancolombia.usecase.loanapplication.LoanApplicationReviewDto dto) {
-        return LoanApplicationReviewResponse.builder()
-                .id(dto.getId())
-                .amount(dto.getAmount())
-                .term(dto.getTerm())
-                .email(dto.getEmail())
-                .fullName(dto.getFullName())
-                .loanType(dto.getLoanType())
-                .interestRate(dto.getInterestRate())
-                .applicationStatus(dto.getApplicationStatus())
-                .baseSalary(dto.getBaseSalary())
-                .totalMonthlyDebtFromApprovedApplications(dto.getTotalMonthlyDebtFromApprovedApplications())
-                .createdAt(dto.getCreatedAt())
-                .build();
-    }
+
 
     private Mono<LoanApplicationRequest> validateRequest(LoanApplicationRequest request) {
         Set<ConstraintViolation<LoanApplicationRequest>> violations = validator.validate(request);

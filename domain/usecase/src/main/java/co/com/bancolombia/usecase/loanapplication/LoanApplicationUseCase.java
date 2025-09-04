@@ -1,6 +1,7 @@
 package co.com.bancolombia.usecase.loanapplication;
 
 
+import co.com.bancolombia.model.loanapplication.LoanApplicationReview;
 import co.com.bancolombia.model.user.UserValidator;
 import co.com.bancolombia.model.loanapplication.LoanApplication;
 import co.com.bancolombia.model.loanapplication.gateways.LoanApplicationRepository;
@@ -78,7 +79,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
     }
 
     @Override
-    public Flux<LoanApplicationReviewDto> getLoanApplicationsForReview(String jwtToken, int page, int size) {
+    public Flux<LoanApplicationReview> getLoanApplicationsForReview(String jwtToken, int page, int size) {
         return loanApplicationRepository.findByStatus(REVIEW_STATUSES.get(0), size, (long) page * size)
                 .flatMap(application -> enrichLoanApplicationWithDetails(application, jwtToken));
     }
@@ -89,7 +90,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
             .take(size);
     }
 
-    private Mono<LoanApplicationReviewDto> enrichLoanApplicationWithDetails(LoanApplication application, String jwtToken) {
+    private Mono<LoanApplicationReview> enrichLoanApplicationWithDetails(LoanApplication application, String jwtToken) {
         return Mono.zip(
                 getUserInfo(application.getClientId(), jwtToken),
                 getLoanType(application.getLoanTypeId()),
@@ -101,17 +102,15 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
             State state = tuple.getT3();
             BigDecimal totalMonthlyDebt = tuple.getT4();
 
-            return LoanApplicationReviewDto.builder()
+            return LoanApplicationReview.builder()
                     .id(application.getId())
                     .amount(application.getAmount())
                     .term(application.getTerm())
-                    .email(userInfo.email())
-                    .fullName(userInfo.name() + " " + userInfo.lastName())
-                    .loanType(loanType.getName())
-                    .interestRate(loanType.getInterestRate())
-                    .applicationStatus(state.getName())
-                    .baseSalary(userInfo.baseSalary())
-                    .totalMonthlyDebtFromApprovedApplications(totalMonthlyDebt)
+                    .loanApplication(application)
+                    .loanType(loanType)
+                    .state(state)
+                    .userInfo(userInfo)
+                    .totalMonthlyDebt(totalMonthlyDebt)
                     .createdAt(application.getCreatedAt())
                     .build();
         });

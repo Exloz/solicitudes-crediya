@@ -272,5 +272,19 @@ class CustomExceptionsTest {
             assertNull(exception.getMessage());
             assertNull(exception.getCause());
         }
+
+        @Test
+        @DisplayName("UserIdMismatchException should handle very long message")
+        void userIdMismatchException_withVeryLongMessage() {
+            // Arrange
+            String longMessage = "User ID mismatch detected: The provided user ID does not match the expected user ID in the system. This could indicate an authentication issue or an attempt to access unauthorized resources. Please verify your credentials and try again.";
+
+            // Act
+            UserIdMismatchException exception = new UserIdMismatchException(longMessage);
+
+            // Assert
+            assertEquals(longMessage, exception.getMessage());
+            assertNull(exception.getCause());
+        }
     }
 }
