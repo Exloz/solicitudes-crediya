@@ -11,6 +11,8 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface LoanApplicationMapper {
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
     LoanApplication toModel(LoanApplicationRequest loanApplicationRequest);
     LoanApplicationResponse toResponse(LoanApplication loanApplication);
 
@@ -19,6 +21,10 @@ public interface LoanApplicationMapper {
     @Mapping(target = "applicationStatus", source = "state.name")
     @Mapping(target = "email", source = "userInfo.email")
     @Mapping(target = "fullName", expression = "java(review.getUserInfo().name() + \" \" + review.getUserInfo().lastName())")
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "amount", source = "amount")
+    @Mapping(target = "term", source = "term")
+    @Mapping(target = "createdAt", source = "createdAt")
     @Mapping(target = "baseSalary", source = "userInfo.baseSalary")
     @Mapping(target = "totalMonthlyDebtFromApprovedApplications", source = "totalMonthlyDebt")
     LoanApplicationReviewResponse toReviewResponse(LoanApplicationReview review);

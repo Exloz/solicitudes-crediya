@@ -1,17 +1,19 @@
 package co.com.bancolombia.consumer.client;
 
 
-import co.com.bancolombia.consumer.service.JwtService;
+import co.com.bancolombia.consumer.service.AuthorizationService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import java.io.IOException;
 
@@ -28,9 +30,14 @@ class RestConsumerTest {
         mockBackEnd = new MockWebServer();
         mockBackEnd.start();
         var webClient = WebClient.builder().baseUrl(mockBackEnd.url("/").toString()).build();
-        // For testing purposes, we'll create a simple JwtService mock
-        var jwtService = new JwtService(null); // null publicKey for testing
-        restConsumer = new RestConsumer(webClient, jwtService);
+        // For testing purposes, we'll create a mock AuthorizationService
+        var authorizationService = Mockito.mock(AuthorizationService.class);
+        // Configure mock to return empty Mono for validation methods
+        Mockito.when(authorizationService.validateTokenAndAnyRole(Mockito.anyString(), Mockito.any()))
+                .thenReturn(Mono.empty());
+        Mockito.when(authorizationService.validateToken(Mockito.anyString()))
+                .thenReturn(Mono.just(Mockito.mock(io.jsonwebtoken.Claims.class)));
+        restConsumer = new RestConsumer(webClient, authorizationService);
     }
 
     @AfterAll

@@ -44,6 +44,13 @@ public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplic
     }
 
     @Override
+    public Flux<LoanApplication> findByClientId(String clientId, int limit, long offset) {
+        return repository.findByClientId(clientId, limit, offset)
+                .doOnNext(entity -> log.debug("Mapped entity for client {}: {}", clientId, entity.getId()))
+                .map(this::toEntity);
+    }
+
+    @Override
     public Flux<LoanApplication> findByStatus(String statusName, int limit, long offset) {
         return repository.findByStatus(statusName, limit, offset)
                 .doOnNext(entity -> log.debug("Mapped entity: {}", entity.getId()))

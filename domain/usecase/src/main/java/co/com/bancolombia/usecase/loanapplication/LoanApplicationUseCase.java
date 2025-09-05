@@ -84,10 +84,11 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
                 .flatMap(application -> enrichLoanApplicationWithDetails(application, jwtToken));
     }
 
-    public Flux<LoanApplication> getClientLoanApplications(String clientId, int page, int size) {
-        return loanApplicationRepository.findByClientId(clientId)
-            .skip((long) page * size)
-            .take(size);
+    @Override
+    public Flux<LoanApplicationReview> getClientLoanApplications(String clientId, int page, int size, String jwtToken) {
+        return userValidator.validateUserExists(clientId, jwtToken)
+                .thenMany(loanApplicationRepository.findByClientId(clientId, size, (long) page * size))
+                .flatMap(application -> enrichLoanApplicationWithDetails(application, jwtToken));
     }
 
     private Mono<LoanApplicationReview> enrichLoanApplicationWithDetails(LoanApplication application, String jwtToken) {

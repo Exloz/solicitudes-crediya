@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import co.com.bancolombia.model.loanapplication.LoanApplication;
 import co.com.bancolombia.model.loantype.LoanType;
 import co.com.bancolombia.model.state.State;
 import co.com.bancolombia.model.user.UserInfo;
@@ -37,8 +36,8 @@ class LoanApplicationReviewTest {
                     .amount(TEST_AMOUNT)
                     .term(TEST_TERM)
                     .loanApplication(createTestLoanApplication())
-                    .loanTypeInfo(createTestLoanTypeInfo())
-                    .stateInfo(createTestStateInfo())
+                    .loanType(createTestLoanType())
+                    .state(createTestState())
                     .userInfo(createTestUserInfo())
                     .totalMonthlyDebt(BigDecimal.valueOf(500.00))
                     .createdAt(TEST_CREATED_AT)
@@ -49,8 +48,8 @@ class LoanApplicationReviewTest {
             assertEquals(TEST_AMOUNT, review.getAmount());
             assertEquals(TEST_TERM, review.getTerm());
             assertNotNull(review.getLoanApplication());
-            assertNotNull(review.getLoanTypeInfo());
-            assertNotNull(review.getStateInfo());
+            assertNotNull(review.getLoanType());
+            assertNotNull(review.getState());
             assertNotNull(review.getUserInfo());
             assertEquals(BigDecimal.valueOf(500.00), review.getTotalMonthlyDebt());
             assertEquals(TEST_CREATED_AT, review.getCreatedAt());
@@ -69,8 +68,8 @@ class LoanApplicationReviewTest {
             assertNull(review.getAmount());
             assertNull(review.getTerm());
             assertNull(review.getLoanApplication());
-            assertNull(review.getLoanTypeInfo());
-            assertNull(review.getStateInfo());
+            assertNull(review.getLoanType());
+            assertNull(review.getState());
             assertNull(review.getUserInfo());
             assertNull(review.getTotalMonthlyDebt());
             assertNull(review.getCreatedAt());
@@ -92,8 +91,8 @@ class LoanApplicationReviewTest {
             assertNull(review.getAmount());
             assertNull(review.getTerm());
             assertNull(review.getLoanApplication());
-            assertNull(review.getLoanTypeInfo());
-            assertNull(review.getStateInfo());
+            assertNull(review.getLoanType());
+            assertNull(review.getState());
             assertNull(review.getUserInfo());
             assertNull(review.getTotalMonthlyDebt());
             assertNull(review.getCreatedAt());
@@ -103,19 +102,25 @@ class LoanApplicationReviewTest {
         @DisplayName("Should create LoanApplicationReview with all-args constructor")
         void shouldCreateWithAllArgsConstructor() {
             // Act
-            LoanApplicationReview review = new LoanApplicationReview(
-                    TEST_ID, TEST_AMOUNT, TEST_TERM,
-                    createTestLoanApplication(), createTestLoanTypeInfo(),
-                    createTestStateInfo(), createTestUserInfo(),
-                    BigDecimal.valueOf(500.00), TEST_CREATED_AT);
+            LoanApplicationReview review = LoanApplicationReview.builder()
+                    .id(TEST_ID)
+                    .amount(TEST_AMOUNT)
+                    .term(TEST_TERM)
+                    .loanApplication(createTestLoanApplication())
+                    .loanType(createTestLoanType())
+                    .state(createTestState())
+                    .userInfo(createTestUserInfo())
+                    .totalMonthlyDebt(BigDecimal.valueOf(500.00))
+                    .createdAt(TEST_CREATED_AT)
+                    .build();
 
             // Assert
             assertEquals(TEST_ID, review.getId());
             assertEquals(TEST_AMOUNT, review.getAmount());
             assertEquals(TEST_TERM, review.getTerm());
             assertNotNull(review.getLoanApplication());
-            assertNotNull(review.getLoanTypeInfo());
-            assertNotNull(review.getStateInfo());
+            assertNotNull(review.getLoanType());
+            assertNotNull(review.getState());
             assertNotNull(review.getUserInfo());
             assertEquals(BigDecimal.valueOf(500.00), review.getTotalMonthlyDebt());
             assertEquals(TEST_CREATED_AT, review.getCreatedAt());
@@ -172,8 +177,8 @@ class LoanApplicationReviewTest {
         @DisplayName("Should integrate with UserInfo domain object")
         void shouldIntegrateWithUserInfo() {
             // Arrange
-            UserInfo userInfo = new UserInfo("user123", "John", "Doe", "john.doe@example.com",
-                    "123456789", "123 Main St", LocalDate.of(1990, 1, 1),
+            UserInfo userInfo = new UserInfo(123L, "John", "Doe", "john.doe@example.com",
+                    "123456789", "12345568","123 Main St", LocalDate.of(1990, 1, 1),
                     "USER", BigDecimal.valueOf(3000.00));
 
             // Act
@@ -257,8 +262,8 @@ class LoanApplicationReviewTest {
             assertNotNull(review.getAmount());
             assertNotNull(review.getTerm());
             assertNotNull(review.getLoanApplication());
-            assertNotNull(review.getLoanTypeInfo());
-            assertNotNull(review.getStateInfo());
+            assertNotNull(review.getLoanType());
+            assertNotNull(review.getState());
             assertNotNull(review.getUserInfo());
             assertNotNull(review.getTotalMonthlyDebt());
             assertNotNull(review.getCreatedAt());
@@ -280,12 +285,9 @@ class LoanApplicationReviewTest {
 
             LoanApplicationReview review = LoanApplicationReview.builder()
                     .amount(amount)
-                    .loanTypeInfo(LoanApplicationReview.LoanTypeInfo.builder()
-                            .interestRate(interestRate)
-                            .build())
-                    .userInfo(LoanApplicationReview.UserInfo.builder()
-                            .baseSalary(baseSalary)
-                            .build())
+                    .loanType(LoanType.builder().interestRate(interestRate).build())
+                    .userInfo(new UserInfo(123L, "John", "Doe", "john@example.com",
+                            "123", "1234566890","Address", LocalDate.now(), "USER", baseSalary))
                     .totalMonthlyDebt(totalDebt)
                     .build();
 
@@ -327,14 +329,13 @@ class LoanApplicationReviewTest {
             // Act
             LoanApplicationReview review = LoanApplicationReview.builder()
                     .amount(largeAmount)
-                    .userInfo(LoanApplicationReview.UserInfo.builder()
-                            .baseSalary(largeSalary)
-                            .build())
+                    .userInfo(new UserInfo(123L, "John", "Doe", "john@example.com",
+                            "123", "123456789","Address", LocalDate.now(), "USER", largeSalary))
                     .build();
 
             // Assert
             assertEquals(largeAmount, review.getAmount());
-            assertEquals(largeSalary, review.getUserInfo().getBaseSalary());
+            assertEquals(largeSalary, review.getUserInfo().baseSalary());
         }
 
         @Test
@@ -343,15 +344,15 @@ class LoanApplicationReviewTest {
             // Act
             LoanApplicationReview review = LoanApplicationReview.builder()
                     .id(TEST_ID)
-                    .loanTypeInfo(null)
-                    .stateInfo(null)
+                    .loanType(null)
+                    .state(null)
                     .userInfo(null)
                     .build();
 
             // Assert
             assertEquals(TEST_ID, review.getId());
-            assertNull(review.getLoanTypeInfo());
-            assertNull(review.getStateInfo());
+            assertNull(review.getLoanType());
+            assertNull(review.getState());
             assertNull(review.getUserInfo());
         }
     }
@@ -382,8 +383,8 @@ class LoanApplicationReviewTest {
     }
 
     private UserInfo createTestUserInfo() {
-        return new UserInfo("user123", "John", "Doe", "john.doe@example.com",
-                "123456789", "123 Main St", LocalDate.of(1990, 1, 1),
+        return new UserInfo(123L, "John", "Doe", "john.doe@example.com",
+                "123456789", "123456789","123 Main St", LocalDate.of(1990, 1, 1),
                 "USER", BigDecimal.valueOf(3000.00));
     }
 

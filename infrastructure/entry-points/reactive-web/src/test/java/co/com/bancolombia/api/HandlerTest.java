@@ -26,10 +26,12 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -385,9 +387,9 @@ class HandlerTest {
                 .state(State.builder()
                         .name("Pending review")
                         .build())
-                .userInfo(new UserInfo("user123", "John", "Doe", "john.doe@example.com",
-                        "123456789", "123 Main St", LocalDate.of(1990, 1, 1),
-                        "USER", new BigDecimal("3000")))
+                 .userInfo(new UserInfo(123L, "John", "Doe", "john.doe@example.com",
+                         "123456789", "555-1234", "123 Main St", LocalDate.of(1990, 1, 1),
+                         "USER", new BigDecimal("3000")))
                 .totalMonthlyDebt(new BigDecimal("500"))
                 .createdAt(LocalDateTime.now())
                 .build();
