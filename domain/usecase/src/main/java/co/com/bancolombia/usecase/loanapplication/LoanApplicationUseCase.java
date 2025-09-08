@@ -29,6 +29,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
     private static final String AMOUNT_BELOW_MINIMUM_MESSAGE = "Amount %.2f is below minimum %.2f for loan type %s";
     private static final String AMOUNT_EXCEEDS_MAXIMUM_MESSAGE = "Amount %.2f exceeds maximum %.2f for loan type %s";
     private static final String STATE_NOT_FOUND_MESSAGE = "State not found: ";
+    public static final Long PENDING_REVIEW_STATE_ID = 1L;
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanTypeRepository loanTypeRepository;
@@ -40,30 +41,31 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
         return userValidator.validateUserInfo(loanApplication.getClientId(), jwtToken)
                 .flatMap(userInfo -> loanTypeRepository.findById(loanApplication.getLoanTypeId())
                         .switchIfEmpty(Mono.error(new LoanTypeNotFoundException(LOAN_TYPE_NOT_FOUND_MESSAGE + loanApplication.getLoanTypeId())))
-                        .flatMap(loanType -> validateLoanAmount(loanApplication.getAmount(), loanType))
-                                .map(state -> LoanApplication.builder()
-                                        .clientId(loanApplication.getClientId())
-                                        .amount(loanApplication.getAmount())
-                                        .term(loanApplication.getTerm())
-                                        .loanTypeId(loanApplication.getLoanTypeId())
-                                        .statusId(state.getId())
-                                        .createdAt(LocalDateTime.now())
-                                        .build()))
-                        .flatMap(loanApplicationRepository::saveLoanApplication);
+                        .doOnNext(loanType -> validateLoanAmount(loanApplication.getAmount(), loanType))
+                        .map(loanType -> LoanApplication.builder()
+                                .clientId(loanApplication.getClientId())
+                                .amount(loanApplication.getAmount())
+                                .term(loanApplication.getTerm())
+                                .loanTypeId(loanApplication.getLoanTypeId())
+                                .statusId(PENDING_REVIEW_STATE_ID)
+                                .createdAt(LocalDateTime.now())
+                                .build()
+                        )
+                        .flatMap(loanApplicationRepository::saveLoanApplication)
+                );
     }
 
-    private Mono<LoanType> validateLoanAmount(BigDecimal amount, LoanType loanType) {
+    private void validateLoanAmount(BigDecimal amount, LoanType loanType) {
         if (amount.compareTo(loanType.getMinAmount()) < 0) {
-            return Mono.error(new InvalidLoanAmountException(
-                String.format(AMOUNT_BELOW_MINIMUM_MESSAGE,
-                    amount, loanType.getMinAmount(), loanType.getName())));
+            throw new InvalidLoanAmountException(
+                    String.format(AMOUNT_BELOW_MINIMUM_MESSAGE,
+                            amount, loanType.getMinAmount(), loanType.getName()));
         }
         if (amount.compareTo(loanType.getMaxAmount()) > 0) {
-            return Mono.error(new InvalidLoanAmountException(
-                String.format(AMOUNT_EXCEEDS_MAXIMUM_MESSAGE,
-                    amount, loanType.getMaxAmount(), loanType.getName())));
+            throw new InvalidLoanAmountException(
+                    String.format(AMOUNT_EXCEEDS_MAXIMUM_MESSAGE,
+                            amount, loanType.getMaxAmount(), loanType.getName()));
         }
-        return Mono.just(loanType);
     }
 
     @Override
@@ -90,7 +92,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
                     .loanType(loanType)
                     .state(state)
                     .userInfo(userInfo)
-                     .monthlyRequestAmount(getMonthlyRequestAmount(loanApplication, loanType))
+                    .monthlyRequestAmount(getMonthlyRequestAmount(loanApplication, loanType))
                     .createdAt(loanApplication.getCreatedAt())
                     .build();
         });
@@ -110,7 +112,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
                 .switchIfEmpty(Mono.error(new StateNotFoundException(STATE_NOT_FOUND_MESSAGE + stateId)));
     }
 
-    private BigDecimal getMonthlyRequestAmount(LoanApplication loanApplication, LoanType loanType) {
+    public BigDecimal getMonthlyRequestAmount(LoanApplication loanApplication, LoanType loanType) {
         BigDecimal principal = loanApplication.getAmount();
         BigDecimal monthlyRate = loanType.getInterestRate().divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
         int term = loanApplication.getTerm();
@@ -124,6 +126,6 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
         BigDecimal denominator = rateToTerm.subtract(BigDecimal.ONE);
 
         return principal.multiply(numerator.divide(denominator, 10, RoundingMode.HALF_UP))
-                       .setScale(2, RoundingMode.HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
     }
 }
