@@ -11,7 +11,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface LoanApplicationMapper {
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "statusId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     LoanApplication toModel(LoanApplicationRequest loanApplicationRequest);
     LoanApplicationResponse toResponse(LoanApplication loanApplication);

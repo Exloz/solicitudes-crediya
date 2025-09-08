@@ -24,17 +24,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
 
-    // Error messages
     private static final String LOAN_TYPE_NOT_FOUND_MESSAGE = "Loan type not found: ";
     private static final String AMOUNT_BELOW_MINIMUM_MESSAGE = "Amount %.2f is below minimum %.2f for loan type %s";
     private static final String AMOUNT_EXCEEDS_MAXIMUM_MESSAGE = "Amount %.2f exceeds maximum %.2f for loan type %s";
-    private static final String PENDING_REVIEW_STATE_NAME = "Pending review";
-    private static final String PENDING_REVIEW_STATE_NOT_FOUND_MESSAGE = "Pending review state not found";
     private static final String STATE_NOT_FOUND_MESSAGE = "State not found: ";
-
-    // Review status names
-    private static final String PENDING_REVIEW_STATUS = "Pending review";
-    private static final List<String> REVIEW_STATUSES = List.of(PENDING_REVIEW_STATUS);
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanTypeRepository loanTypeRepository;
@@ -43,20 +36,19 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
 
     @Override
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication, String jwtToken) {
-        return userValidator.validateUserExists(loanApplication.getClientId(), jwtToken)
+        return userValidator.validateUserInfo(loanApplication.getClientId(), jwtToken)
                 .flatMap(userInfo -> loanTypeRepository.findById(loanApplication.getLoanTypeId())
                         .switchIfEmpty(Mono.error(new LoanTypeNotFoundException(LOAN_TYPE_NOT_FOUND_MESSAGE + loanApplication.getLoanTypeId())))
                         .flatMap(loanType -> validateLoanAmount(loanApplication.getAmount(), loanType))
-                        .flatMap(loanType -> getPendingReviewState()
                                 .map(state -> LoanApplication.builder()
                                         .clientId(loanApplication.getClientId())
                                         .amount(loanApplication.getAmount())
                                         .term(loanApplication.getTerm())
                                         .loanTypeId(loanApplication.getLoanTypeId())
-                                        .status(state.getId())
+                                        .statusId(state.getId())
                                         .createdAt(LocalDateTime.now())
                                         .build()))
-                        .flatMap(loanApplicationRepository::saveLoanApplication));
+                        .flatMap(loanApplicationRepository::saveLoanApplication);
     }
 
     private Mono<LoanType> validateLoanAmount(BigDecimal amount, LoanType loanType) {
@@ -73,30 +65,18 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
         return Mono.just(loanType);
     }
 
-    private Mono<State> getPendingReviewState() {
-        return stateRepository.findByName(PENDING_REVIEW_STATE_NAME)
-                .switchIfEmpty(Mono.error(new StateNotFoundException(PENDING_REVIEW_STATE_NOT_FOUND_MESSAGE)));
-    }
-
     @Override
-    public Flux<LoanApplicationReview> getLoanApplicationsForReview(String jwtToken, int page, int size) {
-        return loanApplicationRepository.findByStatus(REVIEW_STATUSES.get(0), size, (long) page * size)
+    public Flux<LoanApplicationReview> getLoanApplications(String jwtToken, int page, int size, List<Integer> typeList) {
+        return loanApplicationRepository.findByStatus(typeList, size, (long) page * size)
                 .flatMap(application -> enrichLoanApplicationWithDetails(application, jwtToken));
     }
 
-    @Override
-    public Flux<LoanApplicationReview> getClientLoanApplications(String clientId, int page, int size, String jwtToken) {
-        return userValidator.validateUserExists(clientId, jwtToken)
-                .thenMany(loanApplicationRepository.findByClientId(clientId, size, (long) page * size))
-                .flatMap(application -> enrichLoanApplicationWithDetails(application, jwtToken));
-    }
-
-    private Mono<LoanApplicationReview> enrichLoanApplicationWithDetails(LoanApplication application, String jwtToken) {
+    private Mono<LoanApplicationReview> enrichLoanApplicationWithDetails(LoanApplication loanApplication, String jwtToken) {
         return Mono.zip(
-                getUserInfo(application.getClientId(), jwtToken),
-                getLoanType(application.getLoanTypeId()),
-                getState(application.getStatus()),
-                getTotalMonthlyDebt(application.getClientId())
+                getUserInfo(loanApplication.getClientId(), jwtToken),
+                getLoanType(loanApplication.getLoanTypeId()),
+                getState(loanApplication.getStatusId()),
+                getTotalMonthlyDebt(loanApplication.getClientId())
         ).map(tuple -> {
             UserInfo userInfo = tuple.getT1();
             LoanType loanType = tuple.getT2();
@@ -104,21 +84,21 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
             BigDecimal totalMonthlyDebt = tuple.getT4();
 
             return LoanApplicationReview.builder()
-                    .id(application.getId())
-                    .amount(application.getAmount())
-                    .term(application.getTerm())
-                    .loanApplication(application)
+                    .id(loanApplication.getId())
+                    .amount(loanApplication.getAmount())
+                    .term(loanApplication.getTerm())
+                    .loanApplication(loanApplication)
                     .loanType(loanType)
                     .state(state)
                     .userInfo(userInfo)
                     .totalMonthlyDebt(totalMonthlyDebt)
-                    .createdAt(application.getCreatedAt())
+                    .createdAt(loanApplication.getCreatedAt())
                     .build();
         });
     }
 
     private Mono<UserInfo> getUserInfo(String clientId, String jwtToken) {
-        return userValidator.validateUserExists(clientId, jwtToken);
+        return userValidator.validateUserInfo(clientId, jwtToken);
     }
 
     private Mono<LoanType> getLoanType(Long loanTypeId) {
@@ -134,5 +114,4 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
     private Mono<BigDecimal> getTotalMonthlyDebt(String clientId) {
         return Mono.just(BigDecimal.valueOf(500.00));
     }
-
 }

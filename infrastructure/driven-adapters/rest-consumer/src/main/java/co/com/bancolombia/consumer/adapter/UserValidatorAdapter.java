@@ -16,24 +16,10 @@ public class UserValidatorAdapter implements UserValidator {
     private final RestConsumer restConsumer;
 
     @Override
-    public Mono<UserInfo> validateUserExists(String userId, String jwtToken) {
-        return restConsumer.getUserByIdDocument(userId, jwtToken)
+    public Mono<UserInfo> validateUserInfo(String userId, String jwtToken) {
+        return restConsumer.getUserById(userId, jwtToken)
                 .map(this::mapToUserInfo)
                 .switchIfEmpty(Mono.error(new RuntimeException("User not found - cannot create loan application")));
-    }
-
-    @Override
-    public Mono<Void> validateUserRole(String userId, String jwtToken, String requiredRole) {
-        return restConsumer.getUserByIdDocument(userId, jwtToken)
-                .map(this::mapToUserInfo)
-                .switchIfEmpty(Mono.error(new InsufficientPrivilegesException("User not found")))
-                .flatMap(userInfo -> {
-                    if (!requiredRole.equals(userInfo.roleId())) {
-                        return Mono.error(new InsufficientPrivilegesException(
-                            String.format("User does not have required role: %s", requiredRole)));
-                    }
-                    return Mono.empty();
-                });
     }
 
     private UserInfo mapToUserInfo(UserInfoRes userInfoRes) {

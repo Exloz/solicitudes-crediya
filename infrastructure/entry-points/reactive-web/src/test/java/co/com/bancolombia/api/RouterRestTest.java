@@ -8,7 +8,6 @@ import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -52,7 +51,7 @@ class RouterRestTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(java.time.LocalDateTime.now())
                 .build();
 

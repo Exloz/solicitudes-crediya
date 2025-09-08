@@ -2,14 +2,12 @@ package co.com.bancolombia.api;
 
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
 import co.com.bancolombia.api.dto.LoanApplicationResponse;
-import co.com.bancolombia.api.dto.LoanApplicationReviewResponse;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
 import co.com.bancolombia.consumer.service.AuthorizationService;
 import co.com.bancolombia.model.exception.business.InvalidLoanAmountException;
 import co.com.bancolombia.model.exception.security.ExpiredJwtTokenException;
 import co.com.bancolombia.model.exception.security.InsufficientPrivilegesException;
 import co.com.bancolombia.model.exception.security.InvalidJwtTokenException;
-import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
 import co.com.bancolombia.model.exception.security.UserIdMismatchException;
 import co.com.bancolombia.model.loanapplication.LoanApplication;
 import co.com.bancolombia.model.loanapplication.LoanApplicationReview;
@@ -92,7 +90,7 @@ class HandlerTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -399,7 +397,7 @@ class HandlerTest {
         when(serverRequest.queryParam("page")).thenReturn(java.util.Optional.of(String.valueOf(page)));
         when(serverRequest.queryParam("size")).thenReturn(java.util.Optional.of(String.valueOf(size)));
         when(authorizationService.validateTokenAndRole(jwtToken, "Advisor")).thenReturn(Mono.empty());
-        when(loanApplicationUseCase.getLoanApplicationsForReview(jwtToken, page, size))
+        when(loanApplicationUseCase.getLoanApplications(jwtToken, page, size))
                 .thenReturn(Flux.just(review));
 
         // Act
@@ -474,7 +472,7 @@ class HandlerTest {
         when(serverRequest.queryParam("page")).thenReturn(java.util.Optional.empty());
         when(serverRequest.queryParam("size")).thenReturn(java.util.Optional.empty());
         when(authorizationService.validateTokenAndRole(jwtToken, "Advisor")).thenReturn(Mono.empty());
-        when(loanApplicationUseCase.getLoanApplicationsForReview(jwtToken, 0, 10))
+        when(loanApplicationUseCase.getLoanApplications(jwtToken, 0, 10))
                 .thenReturn(Flux.empty());
 
         // Act
@@ -496,7 +494,7 @@ class HandlerTest {
         when(serverRequest.queryParam("page")).thenReturn(java.util.Optional.of("-1"));
         when(serverRequest.queryParam("size")).thenReturn(java.util.Optional.of("150"));
         when(authorizationService.validateTokenAndRole(jwtToken, "Advisor")).thenReturn(Mono.empty());
-        when(loanApplicationUseCase.getLoanApplicationsForReview(jwtToken, 0, 100))
+        when(loanApplicationUseCase.getLoanApplications(jwtToken, 0, 100))
                 .thenReturn(Flux.empty());
 
         // Act

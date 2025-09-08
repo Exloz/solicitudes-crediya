@@ -4,7 +4,5 @@ import reactor.core.publisher.Mono;
 
 public interface UserValidator {
 
-    Mono<UserInfo> validateUserExists(String userId, String jwtToken);
-
-    Mono<Void> validateUserRole(String userId, String jwtToken, String requiredRole);
+    Mono<UserInfo> validateUserInfo(String userId, String jwtToken);
 }

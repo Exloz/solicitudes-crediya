@@ -34,7 +34,7 @@ public class LoanApplicationEntity {
     private Long loanTypeId;
 
     @Column("status")
-    private Long status;
+    private Long statusId;
 
     @Column("created_at")
     private LocalDateTime createdAt;

@@ -5,11 +5,11 @@ import co.com.bancolombia.model.loanapplication.LoanApplicationReview;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 public interface LoanApplicationUseCasePort {
 
     Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication, String jwtToken);
 
-    Flux<LoanApplicationReview> getLoanApplicationsForReview(String jwtToken, int page, int size);
-
-    Flux<LoanApplicationReview> getClientLoanApplications(String clientId, int page, int size, String jwtToken);
+    Flux<LoanApplicationReview> getLoanApplications(String jwtToken, int page, int size, List<Integer> typeList);
 }

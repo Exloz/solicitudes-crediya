@@ -11,6 +11,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -31,7 +32,6 @@ public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplic
                 .as(transactionalOperator::transactional);
     }
 
-
     @Override
     public Mono<LoanApplication> findById(UUID id) {
         return super.findById(id);
@@ -44,16 +44,9 @@ public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplic
     }
 
     @Override
-    public Flux<LoanApplication> findByClientId(String clientId, int limit, long offset) {
-        return repository.findByClientId(clientId, limit, offset)
-                .doOnNext(entity -> log.debug("Mapped entity for client {}: {}", clientId, entity.getId()))
-                .map(this::toEntity);
-    }
-
-    @Override
-    public Flux<LoanApplication> findByStatus(String statusName, int limit, long offset) {
-        return repository.findByStatus(statusName, limit, offset)
-                .doOnNext(entity -> log.debug("Mapped entity: {}", entity.getId()))
+    public Flux<LoanApplication> findByStatus(List<Integer> typeList, int limit, long offset) {
+        return repository.findByStatus(typeList, limit, offset)
+                .doOnNext(entity -> log.info("Mapped entity: {}", entity))
                 .map(this::toEntity);
     }
 }

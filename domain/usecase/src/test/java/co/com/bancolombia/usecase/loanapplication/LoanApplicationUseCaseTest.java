@@ -6,13 +6,10 @@ import co.com.bancolombia.model.exception.business.InvalidLoanAmountException;
 import co.com.bancolombia.model.exception.business.LoanTypeNotFoundException;
 import co.com.bancolombia.model.exception.business.StateNotFoundException;
 import co.com.bancolombia.model.loanapplication.LoanApplication;
-import co.com.bancolombia.model.loanapplication.LoanApplicationReview;
 import co.com.bancolombia.model.loantype.LoanType;
 import co.com.bancolombia.model.state.State;
 import co.com.bancolombia.model.loanapplication.gateways.LoanApplicationRepository;
-import co.com.bancolombia.model.loantype.LoanType;
 import co.com.bancolombia.model.loantype.gateways.LoanTypeRepository;
-import co.com.bancolombia.model.state.State;
 import co.com.bancolombia.model.state.gateways.StateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +57,7 @@ class LoanApplicationUseCaseTest {
         // Mock UserValidator to return a UserInfo for any clientId and JWT token
         UserInfo mockUserInfo = new UserInfo(123L, "John", "Doe", "john.doe@example.com", "123456789",
                 "555-1234", "123 Main St", LocalDate.of(1990, 1, 1), "USER", BigDecimal.valueOf(5000));
-        when(userValidator.validateUserExists(anyString(), anyString())).thenReturn(Mono.just(mockUserInfo));
+        when(userValidator.validateUserInfo(anyString(), anyString())).thenReturn(Mono.just(mockUserInfo));
 
         // Mock LoanTypeRepository
         LoanType mockLoanType = LoanType.builder()
@@ -119,11 +116,11 @@ class LoanApplicationUseCaseTest {
                 .amount(amount)
                 .term(term)
                 .loanTypeId(loanTypeId)
-                .status(statusId)
+                .statusId(statusId)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
         when(stateRepository.findByName("Pending review")).thenReturn(Mono.just(pendingState));
         when(loanApplicationRepository.saveLoanApplication(any(LoanApplication.class))).thenReturn(Mono.just(expected));
@@ -134,7 +131,7 @@ class LoanApplicationUseCaseTest {
                         saved.getAmount().equals(amount) &&
                         saved.getTerm().equals(term) &&
                         saved.getLoanTypeId().equals(loanTypeId) &&
-                        saved.getStatus().equals(statusId))
+                        saved.getStatusId().equals(statusId))
                 .verifyComplete();
     }
 
@@ -153,7 +150,7 @@ class LoanApplicationUseCaseTest {
                 .loanTypeId(loanTypeId)
                 .build();
 
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.empty());
 
         // Act & Assert
@@ -187,7 +184,7 @@ class LoanApplicationUseCaseTest {
                 .interestRate(new BigDecimal("0.15"))
                 .build();
 
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
 
         // Act & Assert
@@ -221,7 +218,7 @@ class LoanApplicationUseCaseTest {
                 .interestRate(new BigDecimal("0.15"))
                 .build();
 
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
 
         // Act & Assert
@@ -255,7 +252,7 @@ class LoanApplicationUseCaseTest {
                 .interestRate(new BigDecimal("0.15"))
                 .build();
 
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
         when(stateRepository.findByName("Pending review")).thenReturn(Mono.empty());
 
@@ -279,7 +276,7 @@ class LoanApplicationUseCaseTest {
                 .loanTypeId(loanTypeId)
                 .build();
 
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.error(new RuntimeException("User not found - cannot create loan application")));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.error(new RuntimeException("User not found - cannot create loan application")));
 
         // Act & Assert
         StepVerifier.create(useCase.registerLoanApplication(input, jwtToken))
@@ -302,7 +299,7 @@ class LoanApplicationUseCaseTest {
                 .build();
 
         // Mock RestConsumer to throw userId mismatch error
-        when(userValidator.validateUserExists(clientId, jwtToken))
+        when(userValidator.validateUserInfo(clientId, jwtToken))
                 .thenReturn(Mono.error(new RuntimeException("User ID mismatch")));
 
         // Act & Assert
@@ -312,7 +309,7 @@ class LoanApplicationUseCaseTest {
     }
 
     @Test
-    void getLoanApplicationsForReview_success() {
+    void getLoanApplications_success() {
         // Arrange
         String jwtToken = "valid.jwt.token";
         int page = 0;
@@ -329,11 +326,11 @@ class LoanApplicationUseCaseTest {
                 .id(applicationId)
                 .clientId(clientId)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .build();
 
         // Set up mocks for this specific test
-        when(loanApplicationRepository.findByStatus("Pending review", size, 0L)).thenReturn(Flux.just(application));
+        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application));
         when(loanTypeRepository.findById(1L)).thenReturn(Mono.just(LoanType.builder()
                 .id(1L)
                 .name("Personal Loan")
@@ -347,27 +344,27 @@ class LoanApplicationUseCaseTest {
                 .build()));
 
          // Act & Assert
-        StepVerifier.create(useCase.getLoanApplicationsForReview(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
                 .expectNextCount(1)
                 .verifyComplete();
     }
 
     @Test
-    void getLoanApplicationsForReview_emptyResult() {
+    void getLoanApplications_emptyResult() {
         // Arrange
         String jwtToken = "valid.jwt.token";
         int page = 0;
         int size = 10;
 
-        when(loanApplicationRepository.findByStatus("Pending review", size, 0L)).thenReturn(Flux.empty());
+        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.empty());
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplicationsForReview(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
                 .verifyComplete();
     }
 
     @Test
-    void getLoanApplicationsForReview_userNotFound() {
+    void getLoanApplications_userNotFound() {
         // Arrange
         String jwtToken = "valid.jwt.token";
         int page = 0;
@@ -382,14 +379,14 @@ class LoanApplicationUseCaseTest {
                 .id(applicationId)
                 .clientId(clientId)
                 .loanTypeId(loanTypeId)
-                .status(stateId)
+                .statusId(stateId)
                 .build();
 
-        when(loanApplicationRepository.findByStatus("Pending review", size, 0L)).thenReturn(Flux.just(application));
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.error(new RuntimeException("User not found")));
+        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.error(new RuntimeException("User not found")));
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplicationsForReview(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
                 .expectError(RuntimeException.class)
                 .verify();
     }
@@ -410,24 +407,24 @@ class LoanApplicationUseCaseTest {
                 .id(applicationId)
                 .clientId(clientId)
                 .loanTypeId(loanTypeId)
-                .status(stateId)
+                .statusId(stateId)
                 .build();
 
         UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
                 clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
 
-        when(loanApplicationRepository.findByStatus("Pending review", size, 0L)).thenReturn(Flux.just(application));
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.empty());
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplicationsForReview(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
                 .expectError(LoanTypeNotFoundException.class)
                 .verify();
     }
 
     @Test
-    void getLoanApplicationsForReview_stateNotFound() {
+    void getLoanApplications_stateNotFound() {
         // Arrange
         String jwtToken = "valid.jwt.token";
         int page = 0;
@@ -442,7 +439,7 @@ class LoanApplicationUseCaseTest {
                 .id(applicationId)
                 .clientId(clientId)
                 .loanTypeId(loanTypeId)
-                .status(stateId)
+                .statusId(stateId)
                 .build();
 
         UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
@@ -456,13 +453,13 @@ class LoanApplicationUseCaseTest {
                 .interestRate(new BigDecimal("0.15"))
                 .build();
 
-        when(loanApplicationRepository.findByStatus("Pending review", size, 0L)).thenReturn(Flux.just(application));
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
         when(stateRepository.findById(stateId)).thenReturn(Mono.empty());
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplicationsForReview(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
                 .expectError(StateNotFoundException.class)
                 .verify();
     }
@@ -481,7 +478,7 @@ class LoanApplicationUseCaseTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)  // Match the mocked loan type ID
-                .status(1L)      // Match the mocked state ID
+                .statusId(1L)      // Match the mocked state ID
                 .build();
 
         // Set up mocks for this specific test
@@ -532,14 +529,14 @@ class LoanApplicationUseCaseTest {
                 .id(applicationId1)
                 .clientId(clientId)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .build();
 
         LoanApplication application2 = LoanApplication.builder()
                 .id(applicationId2)
                 .clientId(clientId)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .build();
 
         // Set up mocks for this specific test
@@ -607,7 +604,7 @@ class LoanApplicationUseCaseTest {
                 .loanTypeId(loanTypeId)
                 .build();
 
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
         when(stateRepository.findByName("Pending review")).thenReturn(Mono.just(pendingState));
         when(loanApplicationRepository.saveLoanApplication(any(LoanApplication.class))).thenReturn(Mono.just(minInput));
@@ -656,7 +653,7 @@ class LoanApplicationUseCaseTest {
                 .name("Pending review")
                 .build();
 
-        when(userValidator.validateUserExists(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
         when(stateRepository.findByName("Pending review")).thenReturn(Mono.just(pendingState));
         when(loanApplicationRepository.saveLoanApplication(any(LoanApplication.class))).thenReturn(Mono.just(input));
@@ -687,7 +684,7 @@ class LoanApplicationUseCaseTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(loanTypeId)
-                .status(stateId)
+                .statusId(stateId)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -697,7 +694,7 @@ class LoanApplicationUseCaseTest {
                 .amount(new BigDecimal("75000"))
                 .term(24)
                 .loanTypeId(loanTypeId)
-                .status(stateId)
+                .statusId(stateId)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -721,14 +718,14 @@ class LoanApplicationUseCaseTest {
                 .description("Application is pending review")
                 .build();
 
-        when(loanApplicationRepository.findByStatus("Pending review", size, 0L)).thenReturn(Flux.just(application1, application2));
-        when(userValidator.validateUserExists(clientId1, jwtToken)).thenReturn(Mono.just(userInfo1));
-        when(userValidator.validateUserExists(clientId2, jwtToken)).thenReturn(Mono.just(userInfo2));
+        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application1, application2));
+        when(userValidator.validateUserInfo(clientId1, jwtToken)).thenReturn(Mono.just(userInfo1));
+        when(userValidator.validateUserInfo(clientId2, jwtToken)).thenReturn(Mono.just(userInfo2));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
         when(stateRepository.findById(stateId)).thenReturn(Mono.just(state));
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplicationsForReview(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
                 .expectNextMatches(review -> review.getId().equals(applicationId1))
                 .expectNextMatches(review -> review.getId().equals(applicationId2))
                 .verifyComplete();
@@ -746,11 +743,11 @@ class LoanApplicationUseCaseTest {
                 .id(applicationId)
                 .clientId(clientId)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .build();
 
         when(loanApplicationRepository.findByClientId(eq(clientId), anyInt(), anyLong())).thenReturn(Flux.just(application));
-        when(userValidator.validateUserExists(eq(clientId), eq(JWT_TOKEN))).thenReturn(Mono.just(new UserInfo(123L, "John", "Doe", "john.doe@example.com", "123456789", "555-1234", "123 Main St", LocalDate.of(1990, 1, 1), "USER", BigDecimal.valueOf(5000))));
+        when(userValidator.validateUserInfo(eq(clientId), eq(JWT_TOKEN))).thenReturn(Mono.just(new UserInfo(123L, "John", "Doe", "john.doe@example.com", "123456789", "555-1234", "123 Main St", LocalDate.of(1990, 1, 1), "USER", BigDecimal.valueOf(5000))));
         when(loanTypeRepository.findById(1L)).thenReturn(Mono.just(LoanType.builder()
                 .id(1L)
                 .name("Personal Loan")
@@ -781,7 +778,7 @@ class LoanApplicationUseCaseTest {
                 .id(applicationId)
                 .clientId(clientId)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .build();
 
         // Set up mocks for this specific test

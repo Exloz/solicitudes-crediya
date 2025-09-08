@@ -10,7 +10,7 @@ class UserValidatorTest {
 
     @Test
     @DisplayName("Should define validateUserExists method")
-    void shouldDefineValidateUserExistsMethod() {
+    void shouldDefineValidateUserInfoMethod() {
         // This test verifies that the interface has the expected method signature
         // In a real scenario, this would be tested through implementations
 

@@ -35,7 +35,7 @@ class LoanApplicationTest {
                     .amount(TEST_AMOUNT)
                     .term(TEST_TERM)
                     .loanTypeId(TEST_LOAN_TYPE_ID)
-                    .status(TEST_STATUS)
+                    .statusId(TEST_STATUS)
                     .createdAt(TEST_CREATED_AT)
                     .build();
 
@@ -45,7 +45,7 @@ class LoanApplicationTest {
             assertEquals(TEST_AMOUNT, application.getAmount());
             assertEquals(TEST_TERM, application.getTerm());
             assertEquals(TEST_LOAN_TYPE_ID, application.getLoanTypeId());
-            assertEquals(TEST_STATUS, application.getStatus());
+            assertEquals(TEST_STATUS, application.getStatusId());
             assertEquals(TEST_CREATED_AT, application.getCreatedAt());
         }
 
@@ -64,7 +64,7 @@ class LoanApplicationTest {
             assertEquals(TEST_AMOUNT, application.getAmount());
             assertNull(application.getTerm());
             assertNull(application.getLoanTypeId());
-            assertNull(application.getStatus());
+            assertNull(application.getStatusId());
             assertNull(application.getCreatedAt());
         }
 
@@ -109,7 +109,7 @@ class LoanApplicationTest {
             assertNull(application.getAmount());
             assertNull(application.getTerm());
             assertNull(application.getLoanTypeId());
-            assertNull(application.getStatus());
+            assertNull(application.getStatusId());
             assertNull(application.getCreatedAt());
         }
 
@@ -127,7 +127,7 @@ class LoanApplicationTest {
             assertEquals(TEST_AMOUNT, application.getAmount());
             assertEquals(TEST_TERM, application.getTerm());
             assertEquals(TEST_LOAN_TYPE_ID, application.getLoanTypeId());
-            assertEquals(TEST_STATUS, application.getStatus());
+            assertEquals(TEST_STATUS, application.getStatusId());
             assertEquals(TEST_CREATED_AT, application.getCreatedAt());
         }
     }
@@ -148,7 +148,7 @@ class LoanApplicationTest {
             application.setAmount(TEST_AMOUNT);
             application.setTerm(TEST_TERM);
             application.setLoanTypeId(TEST_LOAN_TYPE_ID);
-            application.setStatus(TEST_STATUS);
+            application.setStatusId(TEST_STATUS);
             application.setCreatedAt(TEST_CREATED_AT);
 
             // Assert
@@ -157,7 +157,7 @@ class LoanApplicationTest {
             assertEquals(TEST_AMOUNT, application.getAmount());
             assertEquals(TEST_TERM, application.getTerm());
             assertEquals(TEST_LOAN_TYPE_ID, application.getLoanTypeId());
-            assertEquals(TEST_STATUS, application.getStatus());
+            assertEquals(TEST_STATUS, application.getStatusId());
             assertEquals(TEST_CREATED_AT, application.getCreatedAt());
         }
 
@@ -174,7 +174,7 @@ class LoanApplicationTest {
             application.setAmount(null);
             application.setTerm(null);
             application.setLoanTypeId(null);
-            application.setStatus(null);
+            application.setStatusId(null);
             application.setCreatedAt(null);
 
             // Assert
@@ -183,7 +183,7 @@ class LoanApplicationTest {
             assertNull(application.getAmount());
             assertNull(application.getTerm());
             assertNull(application.getLoanTypeId());
-            assertNull(application.getStatus());
+            assertNull(application.getStatusId());
             assertNull(application.getCreatedAt());
         }
     }
@@ -266,14 +266,14 @@ class LoanApplicationTest {
                     .amount(BigDecimal.ZERO)
                     .term(0)
                     .loanTypeId(0L)
-                    .status(0L)
+                    .statusId(0L)
                     .build();
 
             // Assert
             assertEquals(BigDecimal.ZERO, application.getAmount());
             assertEquals(0, application.getTerm());
             assertEquals(0L, application.getLoanTypeId());
-            assertEquals(0L, application.getStatus());
+            assertEquals(0L, application.getStatusId());
         }
 
         @Test
@@ -289,14 +289,14 @@ class LoanApplicationTest {
                     .amount(largeAmount)
                     .term(largeTerm)
                     .loanTypeId(largeId)
-                    .status(largeId)
+                    .statusId(largeId)
                     .build();
 
             // Assert
             assertEquals(largeAmount, application.getAmount());
             assertEquals(largeTerm, application.getTerm());
             assertEquals(largeId, application.getLoanTypeId());
-            assertEquals(largeId, application.getStatus());
+            assertEquals(largeId, application.getStatusId());
         }
 
         @Test

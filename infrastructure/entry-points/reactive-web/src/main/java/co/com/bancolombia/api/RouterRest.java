@@ -45,6 +45,7 @@ public class RouterRest {
     private static final String PAGE_PARAM_DESCRIPTION = "Page number (0-based)";
     private static final String SIZE_PARAM_DESCRIPTION = "Number of items per page (max 100)";
     private static final String RESPONSE_OK_DESCRIPTION = "Loan applications retrieved successfully";
+    public static final String APPLICATION_LOAN_STATUS = "Filter by loan application status (can specify multiple)";
 
     @Bean
     @RouterOperations({
@@ -80,7 +81,8 @@ public class RouterRest {
                             parameters = {
                                 @Parameter(name = "Authorization", description = "JWT token with Bearer prefix", required = true, example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."),
                                 @Parameter(name = "page", description = PAGE_PARAM_DESCRIPTION, required = false, example = "0"),
-                                @Parameter(name = "size", description = SIZE_PARAM_DESCRIPTION, required = false, example = "10")
+                                @Parameter(name = "size", description = SIZE_PARAM_DESCRIPTION, required = false, example = "10"),
+                                @Parameter(name = "type", description = APPLICATION_LOAN_STATUS, required = false, example = "1,2,3")
                             },
                             responses = {
                                 @ApiResponse(responseCode = "200", description = RESPONSE_OK_DESCRIPTION,

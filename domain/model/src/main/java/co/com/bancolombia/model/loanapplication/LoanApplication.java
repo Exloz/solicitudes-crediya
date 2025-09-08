@@ -20,6 +20,6 @@ public class LoanApplication {
     private BigDecimal amount;
     private Integer term;
     private Long loanTypeId;
-    private Long status;
+    private Long statusId;
     private LocalDateTime createdAt;
 }
