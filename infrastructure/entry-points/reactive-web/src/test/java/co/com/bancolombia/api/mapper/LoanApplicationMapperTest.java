@@ -35,7 +35,7 @@ class LoanApplicationMapperTest {
         assertEquals(new BigDecimal("50000"), result.getAmount());
         assertEquals(12, result.getTerm());
         assertEquals(1L, result.getLoanTypeId());
-        assertNull(result.getStatus());
+        assertNull(result.getStatusId());
         assertNull(result.getCreatedAt());
     }
 
@@ -51,7 +51,7 @@ class LoanApplicationMapperTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(createdAt)
                 .build();
 

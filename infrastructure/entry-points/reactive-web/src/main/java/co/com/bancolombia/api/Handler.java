@@ -3,6 +3,7 @@ package co.com.bancolombia.api;
 import co.com.bancolombia.api.config.api.GlobalExceptionHandler;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
+import co.com.bancolombia.consumer.service.AuthorizationService;
 import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
 import co.com.bancolombia.usecase.loanapplication.LoanApplicationUseCasePort;
 import jakarta.validation.ConstraintViolation;
@@ -14,6 +15,8 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -33,9 +36,17 @@ public class Handler {
     private static final String MISSING_AUTHORIZATION_HEADER = "Missing Authorization header";
     private static final String INVALID_AUTHORIZATION_HEADER = "Invalid Authorization header format";
 
+    private static final String RECEIVED_REVIEW_REQUEST_LOG = "Received review request with page: {}, size: {}, types: {}";
+    private static final String REVIEW_REQUEST_PROCESSED_LOG = "Review request processed successfully";
+    private static final String ERROR_PROCESSING_REVIEW_LOG = "Error processing review request on: {}";
+    private static final String DEFAULT_PAGE = "0";
+    private static final String DEFAULT_SIZE = "10";
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final LoanApplicationUseCasePort loanApplicationUseCase;
     private final Validator validator;
     private final LoanApplicationMapper mapper;
+    private final AuthorizationService authorizationService;
 
     public Mono<ServerResponse> registerLoanApplication(ServerRequest serverRequest) {
         return Mono.fromCallable(() -> extractJwtToken(serverRequest))
@@ -51,6 +62,55 @@ public class Handler {
                 )
                 .onErrorResume(GlobalExceptionHandler::handleException);
     }
+
+    public Mono<ServerResponse> getLoanApplicationsForReview(ServerRequest serverRequest) {
+        return Mono.fromCallable(() -> extractJwtToken(serverRequest))
+                .flatMap(this::validateJwtAndRole)
+                .flatMap(validToken -> processReviewRequest(serverRequest, validToken))
+                .onErrorResume(GlobalExceptionHandler::handleException);
+    }
+
+    private Mono<String> validateJwtAndRole(String jwtToken) {
+        return authorizationService.validateAdvisorOrAdminAccess(jwtToken)
+                .thenReturn(jwtToken);
+    }
+
+    private Mono<ServerResponse> processReviewRequest(ServerRequest serverRequest, String jwtToken) {
+        var pagination = extractQueryParameters(serverRequest);
+
+        log.info(RECEIVED_REVIEW_REQUEST_LOG, pagination.page(), pagination.size(), pagination.typeList);
+
+        return loanApplicationUseCase.getLoanApplications(jwtToken, pagination.page(), pagination.size(), pagination.typeList())
+                .map(mapper::toReviewResponse)
+                .collectList()
+                .flatMap(applications -> {
+                    if (applications.isEmpty()) {
+                        return ServerResponse.noContent().build();
+                    }
+                    return ServerResponse.ok().bodyValue(applications);
+                })
+                .doOnSuccess(response -> log.info(REVIEW_REQUEST_PROCESSED_LOG))
+                .doOnError(error -> log.error(ERROR_PROCESSING_REVIEW_LOG, getOriginOfError(error)));
+    }
+
+    private QueryParameters extractQueryParameters(ServerRequest serverRequest) {
+        int page = Integer.parseInt(serverRequest.queryParam("page").orElse(DEFAULT_PAGE));
+        int size = Integer.parseInt(serverRequest.queryParam("size").orElse(DEFAULT_SIZE));
+        List<Integer> typeList = Arrays.stream(serverRequest.queryParam("type").orElse("1").split(","))
+                .filter(s -> !s.isBlank())
+                .map(Integer::parseInt)
+                .toList();
+
+        if (size > MAX_PAGE_SIZE) {
+            size = MAX_PAGE_SIZE;
+        }
+        if (page < 0) {
+            page = 0;
+        }
+        return new QueryParameters(page, size, typeList);
+    }
+
+    private record QueryParameters(int page, int size, List<Integer> typeList) {}
 
     private Mono<LoanApplicationRequest> validateRequest(LoanApplicationRequest request) {
         Set<ConstraintViolation<LoanApplicationRequest>> violations = validator.validate(request);

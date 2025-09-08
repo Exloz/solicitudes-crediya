@@ -2,17 +2,19 @@ package co.com.bancolombia.r2dbc.repository.impl;
 
 import co.com.bancolombia.model.loanapplication.LoanApplication;
 import co.com.bancolombia.model.loanapplication.gateways.LoanApplicationRepository;
-import co.com.bancolombia.r2dbc.repository.impl.LoanApplicationRepositoryR2dbc;
 import co.com.bancolombia.r2dbc.entity.LoanApplicationEntity;
 import co.com.bancolombia.r2dbc.helper.ReactiveAdapterOperations;
 import org.reactivecommons.utils.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Repository
 public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplication, LoanApplicationEntity, UUID, LoanApplicationRepositoryR2dbc>
         implements LoanApplicationRepository {
@@ -30,7 +32,6 @@ public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplic
                 .as(transactionalOperator::transactional);
     }
 
-
     @Override
     public Mono<LoanApplication> findById(UUID id) {
         return super.findById(id);
@@ -39,6 +40,13 @@ public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplic
     @Override
     public Flux<LoanApplication> findByClientId(String clientId) {
         return repository.findByClientId(clientId)
+                .map(this::toEntity);
+    }
+
+    @Override
+    public Flux<LoanApplication> findByStatus(List<Integer> typeList, int limit, long offset) {
+        return repository.findByStatus(typeList, limit, offset)
+                .doOnNext(entity -> log.info("Mapped entity: {}", entity))
                 .map(this::toEntity);
     }
 }

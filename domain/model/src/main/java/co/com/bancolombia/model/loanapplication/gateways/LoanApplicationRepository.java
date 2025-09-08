@@ -4,6 +4,7 @@ import co.com.bancolombia.model.loanapplication.LoanApplication;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface LoanApplicationRepository {
@@ -13,4 +14,6 @@ public interface LoanApplicationRepository {
     Mono<LoanApplication> findById(UUID id);
 
     Flux<LoanApplication> findByClientId(String clientId);
+
+    Flux<LoanApplication> findByStatus(List<Integer> typeList, int limit, long offset);
 }

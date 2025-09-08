@@ -1,10 +1,13 @@
 package co.com.bancolombia.model.loanapplication;
-import lombok.Builder;
+
+import co.com.bancolombia.model.loantype.LoanType;
+import co.com.bancolombia.model.state.State;
+import co.com.bancolombia.model.user.UserInfo;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
@@ -12,18 +15,19 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
-@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
-@Builder(toBuilder = true)
-public class LoanApplication {
+public class LoanApplicationReview {
     private UUID id;
-    private String clientId;
     private BigDecimal amount;
     private Integer term;
-    private Long loanTypeId;
-    private Long statusId;
+    private LoanApplication loanApplication;
+    private LoanType loanType;
+    private State state;
+    private UserInfo userInfo;
+    private BigDecimal monthlyRequestAmount;
     private LocalDateTime createdAt;
 }

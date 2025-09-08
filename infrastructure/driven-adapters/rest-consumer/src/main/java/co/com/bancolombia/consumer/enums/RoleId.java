@@ -1,5 +1,8 @@
 package co.com.bancolombia.consumer.enums;
 
 public enum RoleId {
-    USER, ADMIN, ASESOR
+    USER("USER"), ADMIN("ADMIN"), ADVISOR("ADVISOR");
+
+    RoleId(String user) {
+    }
 }

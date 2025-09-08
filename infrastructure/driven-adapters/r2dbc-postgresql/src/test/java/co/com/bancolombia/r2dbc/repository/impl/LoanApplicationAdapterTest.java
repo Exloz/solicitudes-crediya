@@ -1,7 +1,6 @@
 package co.com.bancolombia.r2dbc.repository.impl;
 
 import co.com.bancolombia.model.loanapplication.LoanApplication;
-import co.com.bancolombia.r2dbc.repository.impl.LoanApplicationRepositoryR2dbc;
 import co.com.bancolombia.r2dbc.entity.LoanApplicationEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +51,7 @@ class LoanApplicationAdapterTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -62,7 +61,7 @@ class LoanApplicationAdapterTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -89,7 +88,7 @@ class LoanApplicationAdapterTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -99,7 +98,7 @@ class LoanApplicationAdapterTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -125,7 +124,7 @@ class LoanApplicationAdapterTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -135,7 +134,7 @@ class LoanApplicationAdapterTest {
                 .amount(new BigDecimal("30000"))
                 .term(6)
                 .loanTypeId(2L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -145,7 +144,7 @@ class LoanApplicationAdapterTest {
                 .amount(new BigDecimal("50000"))
                 .term(12)
                 .loanTypeId(1L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -155,7 +154,7 @@ class LoanApplicationAdapterTest {
                 .amount(new BigDecimal("30000"))
                 .term(6)
                 .loanTypeId(2L)
-                .status(1L)
+                .statusId(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
 
