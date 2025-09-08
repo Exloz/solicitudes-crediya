@@ -1,8 +1,8 @@
 server:
-  port: 8081
+  port: ${APP_PORT:8081}
 spring:
   application:
-    name: "LoanRequest"
+    name: "${APP_NAME:LoanRequest}"
   devtools:
     add-properties: false
   h2:
@@ -41,8 +41,8 @@ springdoc:
     operationsSorter: "method"
 adapter:
   restconsumer:
-    timeout: 5000
-    url: "http://localhost:8080"
+    timeout: ${REST_CONSUMER_TIMEOUT:5000}
+    url: "${REST_CONSUMER_URL:http://localhost:8080}"
 resilience4j:
   circuitbreaker:
     instances:

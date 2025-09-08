@@ -60,7 +60,7 @@ public class RestConsumerConfig {
     @Bean
     public PublicKey publicKey() throws Exception {
         ClassPathResource resource = new ClassPathResource("keys/public.pem");
-        String publicKeyPEM = Files.readString(resource.getFile().toPath());
+        String publicKeyPEM = new String(resource.getInputStream().readAllBytes());
 
         String publicKeyContent = publicKeyPEM
             .replaceAll("\\n", "")
