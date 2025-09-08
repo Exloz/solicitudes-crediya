@@ -5,8 +5,10 @@ import co.com.bancolombia.model.state.State;
 import co.com.bancolombia.model.user.UserInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,6 +18,8 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
+@ToString
 public class LoanApplicationReview {
     private UUID id;
     private BigDecimal amount;
@@ -24,6 +28,6 @@ public class LoanApplicationReview {
     private LoanType loanType;
     private State state;
     private UserInfo userInfo;
-    private BigDecimal totalMonthlyDebt;
+    private BigDecimal monthlyRequestAmount;
     private LocalDateTime createdAt;
 }

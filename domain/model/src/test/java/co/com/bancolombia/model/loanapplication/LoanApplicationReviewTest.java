@@ -39,7 +39,7 @@ class LoanApplicationReviewTest {
                     .loanType(createTestLoanType())
                     .state(createTestState())
                     .userInfo(createTestUserInfo())
-                    .totalMonthlyDebt(BigDecimal.valueOf(500.00))
+                    .monthlyRequestAmount(BigDecimal.valueOf(500.00))
                     .createdAt(TEST_CREATED_AT)
                     .build();
 
@@ -51,7 +51,7 @@ class LoanApplicationReviewTest {
             assertNotNull(review.getLoanType());
             assertNotNull(review.getState());
             assertNotNull(review.getUserInfo());
-            assertEquals(BigDecimal.valueOf(500.00), review.getTotalMonthlyDebt());
+            assertEquals(BigDecimal.valueOf(500.00), review.getMonthlyRequestAmount());
             assertEquals(TEST_CREATED_AT, review.getCreatedAt());
         }
 
@@ -71,7 +71,7 @@ class LoanApplicationReviewTest {
             assertNull(review.getLoanType());
             assertNull(review.getState());
             assertNull(review.getUserInfo());
-            assertNull(review.getTotalMonthlyDebt());
+            assertNull(review.getMonthlyRequestAmount());
             assertNull(review.getCreatedAt());
         }
     }
@@ -94,7 +94,7 @@ class LoanApplicationReviewTest {
             assertNull(review.getLoanType());
             assertNull(review.getState());
             assertNull(review.getUserInfo());
-            assertNull(review.getTotalMonthlyDebt());
+            assertNull(review.getMonthlyRequestAmount());
             assertNull(review.getCreatedAt());
         }
 
@@ -110,7 +110,7 @@ class LoanApplicationReviewTest {
                     .loanType(createTestLoanType())
                     .state(createTestState())
                     .userInfo(createTestUserInfo())
-                    .totalMonthlyDebt(BigDecimal.valueOf(500.00))
+                    .monthlyRequestAmount(BigDecimal.valueOf(500.00))
                     .createdAt(TEST_CREATED_AT)
                     .build();
 
@@ -122,7 +122,7 @@ class LoanApplicationReviewTest {
             assertNotNull(review.getLoanType());
             assertNotNull(review.getState());
             assertNotNull(review.getUserInfo());
-            assertEquals(BigDecimal.valueOf(500.00), review.getTotalMonthlyDebt());
+            assertEquals(BigDecimal.valueOf(500.00), review.getMonthlyRequestAmount());
             assertEquals(TEST_CREATED_AT, review.getCreatedAt());
         }
     }
@@ -265,7 +265,7 @@ class LoanApplicationReviewTest {
             assertNotNull(review.getLoanType());
             assertNotNull(review.getState());
             assertNotNull(review.getUserInfo());
-            assertNotNull(review.getTotalMonthlyDebt());
+            assertNotNull(review.getMonthlyRequestAmount());
             assertNotNull(review.getCreatedAt());
 
             // Verify nested objects
@@ -288,14 +288,14 @@ class LoanApplicationReviewTest {
                     .loanType(LoanType.builder().interestRate(interestRate).build())
                     .userInfo(new UserInfo(123L, "John", "Doe", "john@example.com",
                             "123", "1234566890","Address", LocalDate.now(), "USER", baseSalary))
-                    .totalMonthlyDebt(totalDebt)
+                    .monthlyRequestAmount(totalDebt)
                     .build();
 
             // Assert
             assertEquals(amount, review.getAmount());
             assertEquals(interestRate, review.getLoanType().getInterestRate());
             assertEquals(baseSalary, review.getUserInfo().baseSalary());
-            assertEquals(totalDebt, review.getTotalMonthlyDebt());
+            assertEquals(totalDebt, review.getMonthlyRequestAmount());
         }
     }
 
@@ -310,13 +310,13 @@ class LoanApplicationReviewTest {
             LoanApplicationReview review = LoanApplicationReview.builder()
                     .amount(BigDecimal.ZERO)
                     .term(0)
-                    .totalMonthlyDebt(BigDecimal.ZERO)
+                    .monthlyRequestAmount(BigDecimal.ZERO)
                     .build();
 
             // Assert
             assertEquals(BigDecimal.ZERO, review.getAmount());
             assertEquals(0, review.getTerm());
-            assertEquals(BigDecimal.ZERO, review.getTotalMonthlyDebt());
+            assertEquals(BigDecimal.ZERO, review.getMonthlyRequestAmount());
         }
 
         @Test
@@ -397,7 +397,7 @@ class LoanApplicationReviewTest {
                 .loanType(createTestLoanType())
                 .state(createTestState())
                 .userInfo(createTestUserInfo())
-                .totalMonthlyDebt(BigDecimal.valueOf(500.00))
+                .monthlyRequestAmount(BigDecimal.valueOf(500.00))
                 .createdAt(TEST_CREATED_AT)
                 .build();
     }

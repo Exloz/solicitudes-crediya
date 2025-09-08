@@ -1,9 +1,11 @@
 package co.com.bancolombia.model.loanapplication;
 import lombok.Builder;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,6 +15,8 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
+@ToString
 @Builder(toBuilder = true)
 public class LoanApplication {
     private UUID id;

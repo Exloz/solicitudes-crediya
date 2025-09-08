@@ -83,7 +83,12 @@ public class Handler {
         return loanApplicationUseCase.getLoanApplications(jwtToken, pagination.page(), pagination.size(), pagination.typeList())
                 .map(mapper::toReviewResponse)
                 .collectList()
-                .flatMap(applications -> ServerResponse.ok().bodyValue(applications))
+                .flatMap(applications -> {
+                    if (applications.isEmpty()) {
+                        return ServerResponse.noContent().build();
+                    }
+                    return ServerResponse.ok().bodyValue(applications);
+                })
                 .doOnSuccess(response -> log.info(REVIEW_REQUEST_PROCESSED_LOG))
                 .doOnError(error -> log.error(ERROR_PROCESSING_REVIEW_LOG, getOriginOfError(error)));
     }

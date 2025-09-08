@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UserValidatorTest {
 
     @Test
-    @DisplayName("Should define validateUserExists method")
+    @DisplayName("Should define validateUserInfo method")
     void shouldDefineValidateUserInfoMethod() {
         // This test verifies that the interface has the expected method signature
         // In a real scenario, this would be tested through implementations
@@ -29,8 +29,8 @@ class UserValidatorTest {
     }
 
     @Test
-    @DisplayName("Should define validateUserRole method")
-    void shouldDefineValidateUserRoleMethod() {
+    @DisplayName("Should define validateUserInfo method signature")
+    void shouldDefineValidateUserInfoMethodSignature() {
         // This test verifies that the interface has the expected method signature
 
         // Arrange
@@ -61,7 +61,7 @@ class UserValidatorTest {
         // Verify that the interface has the expected number of methods
         Class<?> userValidatorClass = UserValidator.class;
 
-        // Should have 2 methods: validateUserExists and validateUserRole
-        assertEquals(2, userValidatorClass.getMethods().length);
+        // Should have 1 method: validateUserInfo
+        assertEquals(1, userValidatorClass.getMethods().length);
     }
 }

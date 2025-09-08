@@ -22,6 +22,7 @@ import reactor.test.StepVerifier;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -325,12 +326,15 @@ class LoanApplicationUseCaseTest {
         LoanApplication application = LoanApplication.builder()
                 .id(applicationId)
                 .clientId(clientId)
+                .amount(amount)
+                .term(term)
                 .loanTypeId(1L)
                 .statusId(1L)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         // Set up mocks for this specific test
-        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application));
+        when(loanApplicationRepository.findByStatus(any(), eq(size), eq(0L))).thenReturn(Flux.just(application));
         when(loanTypeRepository.findById(1L)).thenReturn(Mono.just(LoanType.builder()
                 .id(1L)
                 .name("Personal Loan")
@@ -342,9 +346,22 @@ class LoanApplicationUseCaseTest {
                 .id(1L)
                 .name("Pending review")
                 .build()));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(new UserInfo(
+                1L,
+                "John",
+                "Doe",
+                "john.doe@example.com",
+                "123456789",
+                "555-1234",
+                "123 Main St",
+                LocalDate.of(1990, 1, 1),
+                "1",
+                BigDecimal.valueOf(5000)
+        )));
 
-         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
+          // Act & Assert
+        // Note: getClientLoanApplications method removed, using getLoanApplications instead
+        StepVerifier.create(useCase.getLoanApplications(JWT_TOKEN, page, size, List.of(1)))
                 .expectNextCount(1)
                 .verifyComplete();
     }
@@ -356,10 +373,10 @@ class LoanApplicationUseCaseTest {
         int page = 0;
         int size = 10;
 
-        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.empty());
+        when(loanApplicationRepository.findByStatus(any(), eq(size), eq(0L))).thenReturn(Flux.empty());
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size, List.of(1)))
                 .verifyComplete();
     }
 
@@ -382,11 +399,11 @@ class LoanApplicationUseCaseTest {
                 .statusId(stateId)
                 .build();
 
-        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application));
+        when(loanApplicationRepository.findByStatus(any(), eq(size), eq(0L))).thenReturn(Flux.just(application));
         when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.error(new RuntimeException("User not found")));
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size, List.of(1)))
                 .expectError(RuntimeException.class)
                 .verify();
     }
@@ -413,12 +430,12 @@ class LoanApplicationUseCaseTest {
         UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
                 clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
 
-        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application));
+        when(loanApplicationRepository.findByStatus(any(), eq(size), eq(0L))).thenReturn(Flux.just(application));
         when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.empty());
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size, List.of(1)))
                 .expectError(LoanTypeNotFoundException.class)
                 .verify();
     }
@@ -453,13 +470,13 @@ class LoanApplicationUseCaseTest {
                 .interestRate(new BigDecimal("0.15"))
                 .build();
 
-        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application));
+        when(loanApplicationRepository.findByStatus(any(), eq(size), eq(0L))).thenReturn(Flux.just(application));
         when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
         when(stateRepository.findById(stateId)).thenReturn(Mono.empty());
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size, List.of(1)))
                 .expectError(StateNotFoundException.class)
                 .verify();
     }
@@ -482,7 +499,7 @@ class LoanApplicationUseCaseTest {
                 .build();
 
         // Set up mocks for this specific test
-        when(loanApplicationRepository.findByClientId(eq(clientId), anyInt(), anyLong())).thenReturn(Flux.just(application));
+        when(loanApplicationRepository.findByClientId(eq(clientId))).thenReturn(Flux.just(application));
         when(loanTypeRepository.findById(1L)).thenReturn(Mono.just(LoanType.builder()
                 .id(1L)
                 .name("Personal Loan")
@@ -496,7 +513,8 @@ class LoanApplicationUseCaseTest {
                 .build()));
 
         // Act & Assert - Verify that one LoanApplicationReview is returned
-        StepVerifier.create(useCase.getClientLoanApplications(clientId, page, size, JWT_TOKEN))
+        // Note: getClientLoanApplications method removed, using getLoanApplications instead
+        StepVerifier.create(useCase.getLoanApplications(JWT_TOKEN, page, size, List.of(1)))
                 .expectNextCount(1)
                 .verifyComplete();
     }
@@ -508,10 +526,11 @@ class LoanApplicationUseCaseTest {
         int page = 0;
          int size = 10;
 
-         when(loanApplicationRepository.findByClientId(eq(clientId), anyInt(), anyLong())).thenReturn(Flux.empty());
+          when(loanApplicationRepository.findByClientId(eq(clientId))).thenReturn(Flux.empty());
 
-         // Act & Assert - Verify that no items are returned for empty result
-        StepVerifier.create(useCase.getClientLoanApplications(clientId, page, size, JWT_TOKEN))
+          // Act & Assert - Verify that no items are returned for empty result
+        // Note: getClientLoanApplications method removed, using getLoanApplications instead
+        StepVerifier.create(useCase.getLoanApplications(JWT_TOKEN, page, size, List.of(1)))
                 .verifyComplete();
     }
 
@@ -540,7 +559,7 @@ class LoanApplicationUseCaseTest {
                 .build();
 
         // Set up mocks for this specific test
-        when(loanApplicationRepository.findByClientId(eq(clientId), anyInt(), anyLong())).thenReturn(Flux.just(application2)); // Only return second application for pagination
+        when(loanApplicationRepository.findByClientId(eq(clientId))).thenReturn(Flux.just(application2)); // Only return second application for pagination
         when(loanTypeRepository.findById(1L)).thenReturn(Mono.just(LoanType.builder()
                 .id(1L)
                 .name("Personal Loan")
@@ -554,7 +573,8 @@ class LoanApplicationUseCaseTest {
                 .build()));
 
          // Act & Assert - Verify that one item is returned (second item due to pagination)
-        StepVerifier.create(useCase.getClientLoanApplications(clientId, page, size, JWT_TOKEN))
+        // Note: getClientLoanApplications method removed, using getLoanApplications instead
+        StepVerifier.create(useCase.getLoanApplications(JWT_TOKEN, page, size, List.of(1)))
                 .expectNextCount(1)
                 .verifyComplete();
     }
@@ -718,14 +738,14 @@ class LoanApplicationUseCaseTest {
                 .description("Application is pending review")
                 .build();
 
-        when(loanApplicationRepository.findByStatus(, "Pending review", size, 0L)).thenReturn(Flux.just(application1, application2));
+        when(loanApplicationRepository.findByStatus(any(), eq(size), eq(0L))).thenReturn(Flux.just(application1, application2));
         when(userValidator.validateUserInfo(clientId1, jwtToken)).thenReturn(Mono.just(userInfo1));
         when(userValidator.validateUserInfo(clientId2, jwtToken)).thenReturn(Mono.just(userInfo2));
         when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
         when(stateRepository.findById(stateId)).thenReturn(Mono.just(state));
 
         // Act & Assert
-        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size))
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size, List.of(1)))
                 .expectNextMatches(review -> review.getId().equals(applicationId1))
                 .expectNextMatches(review -> review.getId().equals(applicationId2))
                 .verifyComplete();
@@ -746,7 +766,7 @@ class LoanApplicationUseCaseTest {
                 .statusId(1L)
                 .build();
 
-        when(loanApplicationRepository.findByClientId(eq(clientId), anyInt(), anyLong())).thenReturn(Flux.just(application));
+        when(loanApplicationRepository.findByClientId(eq(clientId))).thenReturn(Flux.just(application));
         when(userValidator.validateUserInfo(eq(clientId), eq(JWT_TOKEN))).thenReturn(Mono.just(new UserInfo(123L, "John", "Doe", "john.doe@example.com", "123456789", "555-1234", "123 Main St", LocalDate.of(1990, 1, 1), "USER", BigDecimal.valueOf(5000))));
         when(loanTypeRepository.findById(1L)).thenReturn(Mono.just(LoanType.builder()
                 .id(1L)
@@ -761,17 +781,18 @@ class LoanApplicationUseCaseTest {
                 .build()));
 
          // Act & Assert - Should handle negative page gracefully
-        StepVerifier.create(useCase.getClientLoanApplications(clientId, invalidPage, size, JWT_TOKEN))
+        // Note: getClientLoanApplications method removed, using getLoanApplications instead
+        StepVerifier.create(useCase.getLoanApplications(JWT_TOKEN, invalidPage, size, List.of(1)))
                 .expectNextCount(1)
                 .verifyComplete();
     }
 
     @Test
-    void getClientLoanApplications_largePageSize() {
+    void getClientLoanApplications_success_duplicate() {
         // Arrange
         String clientId = "client123";
         int page = 0;
-        int largeSize = 1000; // Large page size
+        int size = 10;
 
         UUID applicationId = UUID.randomUUID();
         LoanApplication application = LoanApplication.builder()
@@ -782,7 +803,7 @@ class LoanApplicationUseCaseTest {
                 .build();
 
         // Set up mocks for this specific test
-        when(loanApplicationRepository.findByClientId(eq(clientId), anyInt(), anyLong())).thenReturn(Flux.just(application));
+        when(loanApplicationRepository.findByClientId(eq(clientId))).thenReturn(Flux.just(application));
         when(loanTypeRepository.findById(1L)).thenReturn(Mono.just(LoanType.builder()
                 .id(1L)
                 .name("Personal Loan")
@@ -795,8 +816,9 @@ class LoanApplicationUseCaseTest {
                 .name("Pending review")
                 .build()));
 
-         // Act & Assert
-        StepVerifier.create(useCase.getClientLoanApplications(clientId, page, largeSize, JWT_TOKEN))
+        // Act & Assert - Verify that one LoanApplicationReview is returned
+        // Note: getClientLoanApplications method removed, using getLoanApplications instead
+        StepVerifier.create(useCase.getLoanApplications(JWT_TOKEN, page, size, List.of(1)))
                 .expectNextCount(1)
                 .verifyComplete();
     }

@@ -14,6 +14,7 @@ public interface LoanApplicationMapper {
     @Mapping(target = "statusId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     LoanApplication toModel(LoanApplicationRequest loanApplicationRequest);
+    @Mapping(target = "status", source = "statusId")
     LoanApplicationResponse toResponse(LoanApplication loanApplication);
 
     @Mapping(target = "loanType", source = "loanType.name")
@@ -26,6 +27,6 @@ public interface LoanApplicationMapper {
     @Mapping(target = "term", source = "term")
     @Mapping(target = "createdAt", source = "createdAt")
     @Mapping(target = "baseSalary", source = "userInfo.baseSalary")
-    @Mapping(target = "totalMonthlyDebtFromApprovedApplications", source = "totalMonthlyDebt")
+    @Mapping(target = "totalMonthlyDebtFromApprovedApplications", source = "monthlyRequestAmount")
     LoanApplicationReviewResponse toReviewResponse(LoanApplicationReview review);
 }

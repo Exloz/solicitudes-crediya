@@ -18,6 +18,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -75,13 +76,11 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
         return Mono.zip(
                 getUserInfo(loanApplication.getClientId(), jwtToken),
                 getLoanType(loanApplication.getLoanTypeId()),
-                getState(loanApplication.getStatusId()),
-                getTotalMonthlyDebt(loanApplication.getClientId())
+                getState(loanApplication.getStatusId())
         ).map(tuple -> {
             UserInfo userInfo = tuple.getT1();
             LoanType loanType = tuple.getT2();
             State state = tuple.getT3();
-            BigDecimal totalMonthlyDebt = tuple.getT4();
 
             return LoanApplicationReview.builder()
                     .id(loanApplication.getId())
@@ -91,7 +90,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
                     .loanType(loanType)
                     .state(state)
                     .userInfo(userInfo)
-                    .totalMonthlyDebt(totalMonthlyDebt)
+                     .monthlyRequestAmount(getMonthlyRequestAmount(loanApplication, loanType))
                     .createdAt(loanApplication.getCreatedAt())
                     .build();
         });
@@ -111,7 +110,20 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
                 .switchIfEmpty(Mono.error(new StateNotFoundException(STATE_NOT_FOUND_MESSAGE + stateId)));
     }
 
-    private Mono<BigDecimal> getTotalMonthlyDebt(String clientId) {
-        return Mono.just(BigDecimal.valueOf(500.00));
+    private BigDecimal getMonthlyRequestAmount(LoanApplication loanApplication, LoanType loanType) {
+        BigDecimal principal = loanApplication.getAmount();
+        BigDecimal monthlyRate = loanType.getInterestRate().divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
+        int term = loanApplication.getTerm();
+
+        if (monthlyRate.compareTo(BigDecimal.ZERO) == 0) {
+            return principal.divide(BigDecimal.valueOf(term), 2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal rateToTerm = BigDecimal.ONE.add(monthlyRate).pow(term);
+        BigDecimal numerator = monthlyRate.multiply(rateToTerm);
+        BigDecimal denominator = rateToTerm.subtract(BigDecimal.ONE);
+
+        return principal.multiply(numerator.divide(denominator, 10, RoundingMode.HALF_UP))
+                       .setScale(2, RoundingMode.HALF_UP);
     }
 }

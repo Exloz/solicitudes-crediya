@@ -19,6 +19,8 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
@@ -388,7 +390,7 @@ class HandlerTest {
                  .userInfo(new UserInfo(123L, "John", "Doe", "john.doe@example.com",
                          "123456789", "555-1234", "123 Main St", LocalDate.of(1990, 1, 1),
                          "USER", new BigDecimal("3000")))
-                .totalMonthlyDebt(new BigDecimal("500"))
+                .monthlyRequestAmount(new BigDecimal("500"))
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -397,7 +399,7 @@ class HandlerTest {
         when(serverRequest.queryParam("page")).thenReturn(java.util.Optional.of(String.valueOf(page)));
         when(serverRequest.queryParam("size")).thenReturn(java.util.Optional.of(String.valueOf(size)));
         when(authorizationService.validateTokenAndRole(jwtToken, "Advisor")).thenReturn(Mono.empty());
-        when(loanApplicationUseCase.getLoanApplications(jwtToken, page, size))
+        when(loanApplicationUseCase.getLoanApplications(jwtToken, page, size, List.of(1)))
                 .thenReturn(Flux.just(review));
 
         // Act
@@ -472,7 +474,7 @@ class HandlerTest {
         when(serverRequest.queryParam("page")).thenReturn(java.util.Optional.empty());
         when(serverRequest.queryParam("size")).thenReturn(java.util.Optional.empty());
         when(authorizationService.validateTokenAndRole(jwtToken, "Advisor")).thenReturn(Mono.empty());
-        when(loanApplicationUseCase.getLoanApplications(jwtToken, 0, 10))
+        when(loanApplicationUseCase.getLoanApplications(jwtToken, 0, 10, List.of(1)))
                 .thenReturn(Flux.empty());
 
         // Act
@@ -494,7 +496,7 @@ class HandlerTest {
         when(serverRequest.queryParam("page")).thenReturn(java.util.Optional.of("-1"));
         when(serverRequest.queryParam("size")).thenReturn(java.util.Optional.of("150"));
         when(authorizationService.validateTokenAndRole(jwtToken, "Advisor")).thenReturn(Mono.empty());
-        when(loanApplicationUseCase.getLoanApplications(jwtToken, 0, 100))
+        when(loanApplicationUseCase.getLoanApplications(jwtToken, 0, 100, List.of(1)))
                 .thenReturn(Flux.empty());
 
         // Act
