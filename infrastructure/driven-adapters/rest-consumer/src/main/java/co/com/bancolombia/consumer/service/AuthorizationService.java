@@ -23,7 +23,7 @@ public class AuthorizationService {
 
     public Mono<Void> validateTokenAndRole(String jwtToken, String requiredRole) {
         return Mono.fromCallable(() -> {
-                    log.debug("Validating JWT token and role: {}", requiredRole);
+                    log.info("Validating JWT token and role: {}", requiredRole);
 
                     Claims claims = jwtService.validateToken(jwtToken);
 
@@ -43,7 +43,7 @@ public class AuthorizationService {
 
     public Mono<Void> validateTokenAndAnyRole(String jwtToken, String... requiredRoles) {
         return Mono.fromCallable(() -> {
-                    log.debug("Validating JWT token and any of roles: {}", String.join(", ", requiredRoles));
+                    log.info("Validating JWT token and any of roles: {}", String.join(", ", requiredRoles));
 
                     Claims claims = jwtService.validateToken(jwtToken);
 

@@ -5,4 +5,6 @@ import reactor.core.publisher.Mono;
 public interface UserValidator {
 
     Mono<UserInfo> validateUserInfo(String userId, String jwtToken);
+
+    Mono<Void> validateUserIdMatch(String clientId, String jwtToken);
 }
