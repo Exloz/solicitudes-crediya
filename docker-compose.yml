@@ -1,5 +1,5 @@
 services:
-  postgres:
+  request-postgres:
     image: postgres:15-alpine
     container_name: solicitudes-crediya-postgres
     env_file:
@@ -33,7 +33,7 @@ services:
     ports:
       - "${APP_PORT}:${APP_PORT}"
     depends_on:
-      postgres:
+      request-postgres:
         condition: service_healthy
     networks:
       - ${NETWORK_NAME}
@@ -44,4 +44,5 @@ volumes:
 
 networks:
   crediya-network:
-    driver: bridge
+    external: true
+    name: crediya-net
