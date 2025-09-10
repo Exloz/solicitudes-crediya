@@ -1,6 +1,8 @@
 package co.com.bancolombia.sqs.sender;
 
-import java.time.LocalDateTime;
+
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 @lombok.Data
@@ -10,8 +12,8 @@ public class NotificationMessage {
     private String clientId;
     private String clientEmail;
     private Long newStatus;
-    private LocalDateTime decisionTimestamp;
-    private java.math.BigDecimal amount;
+    private Instant decisionTimestamp;
+    private BigDecimal amount;
     private Integer term;
     private Long loanTypeId;
 

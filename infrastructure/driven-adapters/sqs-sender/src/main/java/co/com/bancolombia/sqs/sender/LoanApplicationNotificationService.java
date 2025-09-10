@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Slf4j
@@ -35,7 +36,7 @@ public class LoanApplicationNotificationService implements NotificationGateway {
                     .clientId(application.getClientId())
                     .clientEmail(clientEmail)
                     .newStatus(application.getStatusId())
-                    .decisionTimestamp(LocalDateTime.now())
+                    .decisionTimestamp(Instant.now())
                     .amount(application.getAmount())
                     .term(application.getTerm())
                     .loanTypeId(application.getLoanTypeId())
