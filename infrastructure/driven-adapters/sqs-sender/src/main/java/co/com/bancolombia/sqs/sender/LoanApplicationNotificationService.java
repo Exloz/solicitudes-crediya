@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -20,20 +19,21 @@ public class LoanApplicationNotificationService implements NotificationGateway {
     private final SQSSender sqsSender;
     private final ObjectMapper objectMapper;
 
-    public Mono<String> sendStatusChangeNotification(LoanApplication application) {
-        return Mono.fromCallable(() -> createNotificationMessage(application))
-                .flatMap(message -> sqsSender.send(message))
+    public Mono<String> sendStatusChangeNotification(LoanApplication application, String clientEmail) {
+        return Mono.fromCallable(() -> createNotificationMessage(application, clientEmail))
+                .flatMap(sqsSender::send)
                 .doOnNext(messageId -> log.info("Notification sent to SQS for loan application {} with message ID: {}",
                         application.getId(), messageId))
                 .doOnError(error -> log.error("Failed to send notification for loan application {}: {}",
                         application.getId(), error.getMessage()));
     }
 
-    private String createNotificationMessage(LoanApplication application) {
+    private String createNotificationMessage(LoanApplication application, String clientEmail) {
         try {
             NotificationMessage message = NotificationMessage.builder()
                     .applicationId(application.getId())
                     .clientId(application.getClientId())
+                    .clientEmail(clientEmail)
                     .newStatus(application.getStatusId())
                     .decisionTimestamp(LocalDateTime.now())
                     .amount(application.getAmount())
@@ -46,17 +46,5 @@ public class LoanApplicationNotificationService implements NotificationGateway {
             log.error("Failed to serialize notification message for application {}", application.getId(), e);
             throw new RuntimeException("Failed to create notification message", e);
         }
-    }
-
-    @lombok.Data
-    @lombok.Builder
-    public static class NotificationMessage {
-        private UUID applicationId;
-        private String clientId;
-        private Long newStatus;
-        private LocalDateTime decisionTimestamp;
-        private java.math.BigDecimal amount;
-        private Integer term;
-        private Long loanTypeId;
     }
 }

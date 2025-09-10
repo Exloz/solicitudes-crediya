@@ -5,5 +5,5 @@ import reactor.core.publisher.Mono;
 
 public interface NotificationGateway {
 
-    Mono<String> sendStatusChangeNotification(LoanApplication application);
+    Mono<String> sendStatusChangeNotification(LoanApplication application, String clientEmail);
 }

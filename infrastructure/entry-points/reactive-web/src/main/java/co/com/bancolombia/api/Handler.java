@@ -126,7 +126,6 @@ public class Handler {
 
     private String extractJwtToken(ServerRequest serverRequest) {
         String authHeader = serverRequest.headers().firstHeader(AUTHORIZATION_HEADER);
-        log.info("Extracting JWT token from Authorization header: {}", authHeader);
 
         if (authHeader == null || authHeader.trim().isEmpty()) {
             throw new MissingAuthorizationHeaderException(MISSING_AUTHORIZATION_HEADER);

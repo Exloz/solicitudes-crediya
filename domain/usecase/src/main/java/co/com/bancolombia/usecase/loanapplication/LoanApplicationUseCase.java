@@ -142,12 +142,13 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Loan application not found: " + id)))
                 .flatMap(application -> validateStatusTransition(application.getStatusId(), statusId)
                         .then(loanApplicationRepository.updateStatus(id, statusId)))
-                .flatMap(updatedApplication -> notificationGateway.sendStatusChangeNotification(updatedApplication)
-                        .thenReturn(updatedApplication));
+                .flatMap(loanApplication -> userValidator.validateUserInfo(loanApplication.getClientId(), jwtToken)
+                        .map(UserInfo::email)
+                        .flatMap(email -> notificationGateway.sendStatusChangeNotification(loanApplication, email))
+                        .thenReturn(loanApplication));
     }
 
     private Mono<Void> validateStatusTransition(Long currentStatus, Long newStatus) {
-        // Only allow transitions to Approved (3) or Rejected (4)
         if (newStatus != 3L && newStatus != 4L) {
             return Mono.error(new IllegalArgumentException("Invalid status transition. Only Approved (3) or Rejected (4) are allowed"));
         }

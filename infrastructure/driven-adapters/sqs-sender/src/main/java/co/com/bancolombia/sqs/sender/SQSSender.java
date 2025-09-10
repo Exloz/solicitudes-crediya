@@ -19,7 +19,7 @@ public class SQSSender /*implements SomeGateway*/ {
     public Mono<String> send(String message) {
         return Mono.fromCallable(() -> buildRequest(message))
                 .flatMap(request -> Mono.fromFuture(client.sendMessage(request)))
-                .doOnNext(response -> log.debug("Message sent {}", response.messageId()))
+                .doOnNext(response -> log.info("Message sent {}", response.messageId()))
                 .map(SendMessageResponse::messageId);
     }
 
