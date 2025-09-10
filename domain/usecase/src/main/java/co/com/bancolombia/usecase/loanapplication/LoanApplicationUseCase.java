@@ -10,9 +10,11 @@ import co.com.bancolombia.model.exception.business.LoanTypeNotFoundException;
 import co.com.bancolombia.model.exception.business.StateNotFoundException;
 import co.com.bancolombia.model.loantype.LoanType;
 import co.com.bancolombia.model.loantype.gateways.LoanTypeRepository;
+import co.com.bancolombia.model.loanapplication.gateways.NotificationGateway;
 import co.com.bancolombia.model.state.State;
 import co.com.bancolombia.model.state.gateways.StateRepository;
 import co.com.bancolombia.model.user.UserInfo;
+import co.com.bancolombia.model.user.gateways.AuthorizationGateway;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -21,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
@@ -35,6 +38,8 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
     private final LoanTypeRepository loanTypeRepository;
     private final StateRepository stateRepository;
     private final UserValidator userValidator;
+    private final AuthorizationGateway authorizationGateway;
+    private final NotificationGateway notificationGateway;
 
     @Override
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication, String jwtToken) {
@@ -128,5 +133,25 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
 
         return principal.multiply(numerator.divide(denominator, 10, RoundingMode.HALF_UP))
                 .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    @Override
+    public Mono<LoanApplication> updateLoanApplicationStatus(UUID id, Long statusId, String jwtToken) {
+        return authorizationGateway.validateAdvisorOrAdminAccess(jwtToken)
+                .then(loanApplicationRepository.findById(id))
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Loan application not found: " + id)))
+                .flatMap(application -> validateStatusTransition(application.getStatusId(), statusId)
+                        .then(loanApplicationRepository.updateStatus(id, statusId)))
+                .flatMap(updatedApplication -> notificationGateway.sendStatusChangeNotification(updatedApplication)
+                        .thenReturn(updatedApplication));
+    }
+
+    private Mono<Void> validateStatusTransition(Long currentStatus, Long newStatus) {
+        // Only allow transitions to Approved (3) or Rejected (4)
+        if (newStatus != 3L && newStatus != 4L) {
+            return Mono.error(new IllegalArgumentException("Invalid status transition. Only Approved (3) or Rejected (4) are allowed"));
+        }
+
+        return Mono.empty();
     }
 }

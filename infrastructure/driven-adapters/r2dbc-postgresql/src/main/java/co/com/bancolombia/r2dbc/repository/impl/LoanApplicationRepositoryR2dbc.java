@@ -5,6 +5,7 @@ import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,4 +20,7 @@ public interface LoanApplicationRepositoryR2dbc extends ReactiveCrudRepository<L
            "ORDER BY la.created_at DESC " +
            "LIMIT $2 OFFSET $3")
     Flux<LoanApplicationEntity> findByStatus(List<Integer> idList, int limit, long offset);
+
+    @Query("UPDATE loan_application SET status = :statusId, updated_at = CURRENT_TIMESTAMP WHERE id = :id RETURNING *")
+    Mono<LoanApplicationEntity> updateStatus(UUID id, Long statusId);
 }

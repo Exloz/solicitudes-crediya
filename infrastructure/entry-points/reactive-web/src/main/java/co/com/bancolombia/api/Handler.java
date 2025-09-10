@@ -2,6 +2,7 @@ package co.com.bancolombia.api;
 
 import co.com.bancolombia.api.config.api.GlobalExceptionHandler;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
+import co.com.bancolombia.api.dto.LoanApplicationUpdateRequest;
 import co.com.bancolombia.api.mapper.LoanApplicationMapper;
 import co.com.bancolombia.consumer.service.AuthorizationService;
 import co.com.bancolombia.model.exception.security.MissingAuthorizationHeaderException;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -135,6 +137,33 @@ public class Handler {
         }
 
         return authHeader.substring(BEARER_PREFIX.length());
+    }
+
+    public Mono<ServerResponse> updateLoanApplicationStatus(ServerRequest serverRequest) {
+        String applicationId = serverRequest.pathVariable("id");
+
+        return Mono.fromCallable(() -> extractJwtToken(serverRequest))
+                .flatMap(jwtToken -> serverRequest.bodyToMono(LoanApplicationUpdateRequest.class)
+                        .doOnNext(request -> log.info("Received status update request for application {}: {}", applicationId, request))
+                        .flatMap(this::validateUpdateRequest)
+                        .flatMap(request -> loanApplicationUseCase.updateLoanApplicationStatus(
+                                UUID.fromString(applicationId), request.getStatusId(), jwtToken))
+                        .map(mapper::toResponse)
+                        .flatMap(response -> ServerResponse.ok().bodyValue(response))
+                        .doOnSuccess(response -> log.info("Loan application {} status updated successfully", applicationId))
+                        .doOnError(error -> log.error("Error updating loan application {} status: {}", applicationId, getOriginOfError(error)))
+                )
+                .onErrorResume(GlobalExceptionHandler::handleException);
+    }
+
+    private Mono<LoanApplicationUpdateRequest> validateUpdateRequest(LoanApplicationUpdateRequest request) {
+        Set<ConstraintViolation<LoanApplicationUpdateRequest>> violations = validator.validate(request);
+        if (!violations.isEmpty()) {
+            StringBuilder message = new StringBuilder(VALIDATION_ERRORS_PREFIX);
+            violations.forEach(violation -> message.append(violation.getMessage()).append(VALIDATION_ERROR_SEPARATOR));
+            return Mono.error(new IllegalArgumentException(message.toString()));
+        }
+        return Mono.just(request);
     }
 
     private String getOriginOfError(Throwable error) {
