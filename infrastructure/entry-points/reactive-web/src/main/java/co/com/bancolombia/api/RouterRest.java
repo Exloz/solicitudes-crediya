@@ -3,6 +3,7 @@ package co.com.bancolombia.api;
 import co.com.bancolombia.api.dto.LoanApplicationRequest;
 import co.com.bancolombia.api.dto.LoanApplicationResponse;
 import co.com.bancolombia.api.dto.LoanApplicationReviewResponse;
+import co.com.bancolombia.api.dto.LoanApplicationUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +21,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
+import static org.springframework.web.reactive.function.server.RequestPredicates.PUT;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
@@ -46,6 +48,17 @@ public class RouterRest {
     private static final String SIZE_PARAM_DESCRIPTION = "Number of items per page (max 100)";
     private static final String RESPONSE_OK_DESCRIPTION = "Loan applications retrieved successfully";
     public static final String APPLICATION_LOAN_STATUS = "Filter by loan application status (can specify multiple)";
+
+    // Update constants
+    private static final String UPDATE_LOAN_APPLICATION_OPERATION_ID = "updateLoanApplicationStatus";
+    private static final String UPDATE_LOAN_APPLICATION_SUMMARY = "Update loan application status";
+    private static final String UPDATE_LOAN_APPLICATION_DESCRIPTION = "Updates the status of a loan application to Approved or Rejected from any current state. Requires Advisor role and valid JWT token.";
+    private static final String APPLICATION_ID_PARAM_DESCRIPTION = "Unique identifier of the loan application";
+    private static final String APPLICATION_ID_EXAMPLE = "550e8400-e29b-41d4-a716-446655440000";
+    private static final String UPDATE_REQUEST_BODY_DESCRIPTION = "Status update information (only statusId field required)";
+    private static final String RESPONSE_BAD_REQUEST_UPDATE_DESCRIPTION = "Invalid request data or status transition";
+    private static final String RESPONSE_NOT_FOUND_UPDATE_DESCRIPTION = "Loan application not found";
+    private static final String RESPONSE_CONFLICT_DESCRIPTION = "Invalid status transition (only Approved or Rejected allowed)";
 
     @Bean
     @RouterOperations({
@@ -91,9 +104,35 @@ public class RouterRest {
                                 @ApiResponse(responseCode = "403", description = RESPONSE_FORBIDDEN_DESCRIPTION),
                                 @ApiResponse(responseCode = "500", description = RESPONSE_INTERNAL_SERVER_ERROR_DESCRIPTION)
                             })
+            ),
+            @RouterOperation( path = LOAN_APPLICATION_PATH + "/{id}",
+                    produces = { MediaType.APPLICATION_JSON_VALUE }, method = RequestMethod.PUT, beanClass = Handler.class, beanMethod = "updateLoanApplicationStatus",
+                    operation = @Operation( operationId = UPDATE_LOAN_APPLICATION_OPERATION_ID,
+                            summary = UPDATE_LOAN_APPLICATION_SUMMARY,
+                            description = UPDATE_LOAN_APPLICATION_DESCRIPTION,
+                            parameters = {
+                                @Parameter(name = "id", description = APPLICATION_ID_PARAM_DESCRIPTION, required = true, example = APPLICATION_ID_EXAMPLE),
+                                @Parameter(name = "Authorization", description = "JWT token with Bearer prefix", required = true, example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+                            },
+                            requestBody = @RequestBody(
+                                description = UPDATE_REQUEST_BODY_DESCRIPTION,
+                                required = true,
+                                content = @Content(schema = @Schema(implementation = LoanApplicationUpdateRequest.class))
+                            ),
+                            responses = {
+                                @ApiResponse(responseCode = "200", description = RESPONSE_CREATED_DESCRIPTION,
+                                    content = @Content(schema = @Schema(implementation = LoanApplicationResponse.class))),
+                                @ApiResponse(responseCode = "400", description = RESPONSE_BAD_REQUEST_UPDATE_DESCRIPTION),
+                                @ApiResponse(responseCode = "401", description = RESPONSE_UNAUTHORIZED_DESCRIPTION),
+                                @ApiResponse(responseCode = "403", description = RESPONSE_FORBIDDEN_DESCRIPTION),
+                                @ApiResponse(responseCode = "404", description = RESPONSE_NOT_FOUND_UPDATE_DESCRIPTION),
+                                @ApiResponse(responseCode = "409", description = RESPONSE_CONFLICT_DESCRIPTION),
+                                @ApiResponse(responseCode = "500", description = RESPONSE_INTERNAL_SERVER_ERROR_DESCRIPTION)
+                            })
             )})
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return route(POST(LOAN_APPLICATION_PATH), handler::registerLoanApplication)
-                .andRoute(GET(LOAN_APPLICATION_PATH), handler::getLoanApplicationsForReview);
+                .andRoute(GET(LOAN_APPLICATION_PATH), handler::getLoanApplicationsForReview)
+                .andRoute(PUT(LOAN_APPLICATION_PATH + "/{id}"), handler::updateLoanApplicationStatus);
     }
 }

@@ -16,4 +16,6 @@ public interface LoanApplicationRepository {
     Flux<LoanApplication> findByClientId(String clientId);
 
     Flux<LoanApplication> findByStatus(List<Integer> typeList, int limit, long offset);
+
+    Mono<LoanApplication> updateStatus(UUID id, Long statusId);
 }

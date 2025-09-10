@@ -49,4 +49,12 @@ public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplic
                 .doOnNext(entity -> log.info("Mapped entity: {}", entity))
                 .map(this::toEntity);
     }
+
+    @Override
+    public Mono<LoanApplication> updateStatus(UUID id, Long statusId) {
+        return repository.updateStatus(id, statusId)
+                .map(this::toEntity)
+                .as(transactionalOperator::transactional)
+                .doOnNext(updated -> log.info("Updated loan application {} to status {}", id, statusId));
+    }
 }
