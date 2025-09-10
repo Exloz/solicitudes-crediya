@@ -12,6 +12,8 @@ import co.com.bancolombia.model.state.State;
 import co.com.bancolombia.model.loanapplication.gateways.LoanApplicationRepository;
 import co.com.bancolombia.model.loantype.gateways.LoanTypeRepository;
 import co.com.bancolombia.model.state.gateways.StateRepository;
+import co.com.bancolombia.model.user.gateways.AuthorizationGateway;
+import co.com.bancolombia.model.loanapplication.gateways.NotificationGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -48,6 +50,12 @@ class LoanApplicationUseCaseTest {
     @Mock
     private UserValidator userValidator;
 
+    @Mock
+    private AuthorizationGateway authorizationGateway;
+
+    @Mock
+    private NotificationGateway notificationGateway;
+
     private LoanApplicationUseCase useCase;
 
     private static final String JWT_TOKEN = "mock.jwt.token";
@@ -55,7 +63,7 @@ class LoanApplicationUseCaseTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        useCase = new LoanApplicationUseCase(loanApplicationRepository, loanTypeRepository, stateRepository, userValidator);
+        useCase = new LoanApplicationUseCase(loanApplicationRepository, loanTypeRepository, stateRepository, userValidator, authorizationGateway, notificationGateway);
 
         // Mock UserValidator to return a UserInfo for any clientId and JWT token
         UserInfo mockUserInfo = new UserInfo(123L, "John", "Doe", "john.doe@example.com", "123456789",
