@@ -21,6 +21,6 @@ public interface LoanApplicationRepositoryR2dbc extends ReactiveCrudRepository<L
            "LIMIT $2 OFFSET $3")
     Flux<LoanApplicationEntity> findByStatus(List<Integer> idList, int limit, long offset);
 
-    @Query("UPDATE loan_application SET status = :statusId, updated_at = CURRENT_TIMESTAMP WHERE id = :id RETURNING *")
+    @Query("UPDATE loan_application SET status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *")
     Mono<LoanApplicationEntity> updateStatus(UUID id, Long statusId);
 }

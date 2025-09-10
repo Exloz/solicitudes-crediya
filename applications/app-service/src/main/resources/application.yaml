@@ -46,7 +46,7 @@ adapter:
   sqs:
     region: "${AWS_REGION}"
     queueUrl: "${SQS_QUEUE_URL}"
-    endpoint: "${SQS_ENDPOINT}"
+#    endpoint: "${SQS_ENDPOINT}"
 resilience4j:
   circuitbreaker:
     instances:
