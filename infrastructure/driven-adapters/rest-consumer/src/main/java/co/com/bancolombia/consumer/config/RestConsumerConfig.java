@@ -12,7 +12,6 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
-import java.nio.file.Files;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
@@ -60,7 +59,7 @@ public class RestConsumerConfig {
     @Bean
     public PublicKey publicKey() throws Exception {
         ClassPathResource resource = new ClassPathResource("keys/public.pem");
-        String publicKeyPEM = Files.readString(resource.getFile().toPath());
+        String publicKeyPEM = new String(resource.getInputStream().readAllBytes());
 
         String publicKeyContent = publicKeyPEM
             .replaceAll("\\n", "")

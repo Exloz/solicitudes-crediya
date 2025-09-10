@@ -5,6 +5,7 @@ import co.com.bancolombia.model.user.UserValidator;
 import co.com.bancolombia.model.exception.business.InvalidLoanAmountException;
 import co.com.bancolombia.model.exception.business.LoanTypeNotFoundException;
 import co.com.bancolombia.model.exception.business.StateNotFoundException;
+import co.com.bancolombia.model.exception.security.UserIdMismatchException;
 import co.com.bancolombia.model.loanapplication.LoanApplication;
 import co.com.bancolombia.model.loantype.LoanType;
 import co.com.bancolombia.model.state.State;
@@ -60,6 +61,7 @@ class LoanApplicationUseCaseTest {
         UserInfo mockUserInfo = new UserInfo(123L, "John", "Doe", "john.doe@example.com", "123456789",
                 "555-1234", "123 Main St", LocalDate.of(1990, 1, 1), "USER", BigDecimal.valueOf(5000));
         when(userValidator.validateUserInfo(anyString(), anyString())).thenReturn(Mono.just(mockUserInfo));
+        when(userValidator.validateUserIdMatch(anyString(), anyString())).thenReturn(Mono.empty());
 
         // Mock LoanTypeRepository
         LoanType mockLoanType = LoanType.builder()
@@ -265,13 +267,13 @@ class LoanApplicationUseCaseTest {
                 .loanTypeId(loanTypeId)
                 .build();
 
-        // Mock RestConsumer to throw userId mismatch error
-        when(userValidator.validateUserInfo(clientId, jwtToken))
-                .thenReturn(Mono.error(new RuntimeException("User ID mismatch")));
+        // Mock UserValidator to throw userId mismatch error
+        when(userValidator.validateUserIdMatch(clientId, jwtToken))
+                .thenReturn(Mono.error(new UserIdMismatchException("User ID in token does not match requested user ID")));
 
         // Act & Assert
         StepVerifier.create(useCase.registerLoanApplication(input, jwtToken))
-                .expectError(RuntimeException.class)
+                .expectError(UserIdMismatchException.class)
                 .verify();
     }
 

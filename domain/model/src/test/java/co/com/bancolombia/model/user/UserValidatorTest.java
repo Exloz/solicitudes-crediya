@@ -61,7 +61,7 @@ class UserValidatorTest {
         // Verify that the interface has the expected number of methods
         Class<?> userValidatorClass = UserValidator.class;
 
-        // Should have 1 method: validateUserInfo
-        assertEquals(1, userValidatorClass.getMethods().length);
+        // Should have 2 methods: validateUserInfo and validateUserIdMatch
+        assertEquals(2, userValidatorClass.getMethods().length);
     }
 }

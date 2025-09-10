@@ -339,4 +339,3 @@ build-cache
 
 # Exclude markdown and PEM files as requested
 AGENTS.md.md
-*.pem

@@ -4,10 +4,8 @@ import co.com.bancolombia.model.exception.security.ExpiredJwtTokenException;
 import co.com.bancolombia.model.exception.security.InvalidJwtTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
-import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,18 +21,14 @@ public class JwtService {
     public Claims validateToken(String token) {
         try {
             return Jwts.parser()
-                    .setSigningKey(publicKey)
+                    .verifyWith(publicKey)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (SignatureException e) {
-            throw new InvalidJwtTokenException("Invalid JWT signature");
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (ExpiredJwtException e) {
             throw new ExpiredJwtTokenException("JWT token has expired");
-        } catch (MalformedJwtException e) {
-            throw new InvalidJwtTokenException("Invalid JWT token format");
-        } catch (UnsupportedJwtException e) {
-            throw new InvalidJwtTokenException("Unsupported JWT token");
+        } catch (JwtException e) {
+            throw new InvalidJwtTokenException("Invalid JWT: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             throw new InvalidJwtTokenException("JWT token is null or empty");
         }
