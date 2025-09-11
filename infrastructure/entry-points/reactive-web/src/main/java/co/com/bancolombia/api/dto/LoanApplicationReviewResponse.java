@@ -35,7 +35,7 @@ public class LoanApplicationReviewResponse {
     private static final String APPLICATION_STATUS_EXAMPLE = "Pending review";
     private static final String BASE_SALARY_DESCRIPTION = "Client's base salary";
     private static final String BASE_SALARY_EXAMPLE = "3000.00";
-    private static final String TOTAL_MONTHLY_DEBT_DESCRIPTION = "Total monthly debt from approved applications";
+    private static final String TOTAL_MONTHLY_DEBT_DESCRIPTION = "Total monthly request amount";
     private static final String TOTAL_MONTHLY_DEBT_EXAMPLE = "500.00";
     private static final String CREATED_AT_DESCRIPTION = "Timestamp when the application was created";
     private static final String CREATED_AT_EXAMPLE = "2024-01-15T10:30:00";
@@ -68,7 +68,7 @@ public class LoanApplicationReviewResponse {
     private BigDecimal baseSalary;
 
     @Schema(description = TOTAL_MONTHLY_DEBT_DESCRIPTION, example = TOTAL_MONTHLY_DEBT_EXAMPLE)
-    private BigDecimal totalMonthlyDebtFromApprovedApplications;
+    private BigDecimal monthlyRequestAmount;
 
     @Schema(description = CREATED_AT_DESCRIPTION, example = CREATED_AT_EXAMPLE)
     private LocalDateTime createdAt;
