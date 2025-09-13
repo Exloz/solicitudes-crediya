@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 @Service
 @Log4j2
 @RequiredArgsConstructor
-public class SQSSender /*implements SomeGateway*/ {
+public class SQSSender {
     private final SQSSenderProperties properties;
     private final SqsAsyncClient client;
 
