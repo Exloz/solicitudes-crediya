@@ -27,6 +27,6 @@ public interface LoanApplicationMapper {
     @Mapping(target = "term", source = "term")
     @Mapping(target = "createdAt", source = "createdAt")
     @Mapping(target = "baseSalary", source = "userInfo.baseSalary")
-    @Mapping(target = "totalMonthlyDebtFromApprovedApplications", source = "monthlyRequestAmount")
+    @Mapping(target = "monthlyRequestAmount", source = "monthlyRequestAmount")
     LoanApplicationReviewResponse toReviewResponse(LoanApplicationReview review);
 }
