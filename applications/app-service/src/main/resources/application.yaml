@@ -45,8 +45,8 @@ adapter:
     url: "${REST_CONSUMER_URL:http://localhost:8080}"
   sqs:
     region: "${AWS_REGION}"
-    queueUrl: "${SQS_QUEUE_URL}"
-#    endpoint: "${SQS_ENDPOINT}"
+    queueNotificationsUrl: "${SQS_QUEUE_NOTIFICATIONS_URL}"
+    queueDebtRequestsUrl: "${SQS_QUEUE_DEBT_REQUEST_URL}"
 resilience4j:
   circuitbreaker:
     instances:
@@ -61,3 +61,12 @@ resilience4j:
         waitDurationInOpenState: "10s"
 jwt:
   public-key-path: "${JWT_PUBLIC_KEY_PATH:classpath:keys/public.pem}"
+entrypoint:
+  sqs:
+    region: "us-east-1"
+    endpoint: "http://localhost:4566"
+    queueDebtResponseUrl: "${SQS_QUEUE_DEBT_RESPONSES_URL}"
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 10
+    visibilityTimeoutSeconds: 10
+    numberOfThreads: 1
