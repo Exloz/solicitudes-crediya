@@ -1,7 +1,9 @@
-package co.com.bancolombia.sqs.sender;
+package co.com.bancolombia.sqs.sender.services.loanApplication;
 
 import co.com.bancolombia.model.loanapplication.LoanApplication;
-import co.com.bancolombia.model.loanapplication.gateways.QueueGateway;
+import co.com.bancolombia.model.loanapplication.gateways.NotificationQueueGateway;
+import co.com.bancolombia.sqs.sender.SQSSender;
+import co.com.bancolombia.sqs.sender.services.QueueType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -14,13 +16,14 @@ import java.time.Instant;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class LoanApplicationQueueService implements QueueGateway<LoanApplication> {
+public class LoanApplicationQueueService implements NotificationQueueGateway {
 
     private final SQSSender sqsSender;
     private final ObjectMapper objectMapper;
 
-    public Mono<String> sendMessageToQueue(LoanApplication loanApplication, String clientEmail) {
-        return Mono.fromCallable(() -> createMessageToSend(loanApplication, clientEmail))
+    @Override
+    public Mono<String> sendStatusNotification(LoanApplication loanApplication, String clientEmail) {
+        return Mono.fromCallable(() -> createNotificationMessage(loanApplication, clientEmail))
                 .flatMap((String message) -> sqsSender.send(message, QueueType.NOTIFICATIONS))
                 .doOnNext(messageId -> log.info("Notification sent to SQS for loan application {} with message ID: {}",
                         loanApplication.getId(), messageId))
@@ -28,7 +31,8 @@ public class LoanApplicationQueueService implements QueueGateway<LoanApplication
                         loanApplication.getId(), error.getMessage()));
     }
 
-    public String createMessageToSend(LoanApplication application, String clientEmail) {
+    @Override
+    public String createNotificationMessage(LoanApplication application, String clientEmail) {
         try {
             NotificationMessage message = NotificationMessage.builder()
                     .applicationId(application.getId())
