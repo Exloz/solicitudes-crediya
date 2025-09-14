@@ -25,5 +25,6 @@ public class LoanApplication {
     private Integer term;
     private Long loanTypeId;
     private Long statusId;
+    private Boolean automaticValidation;
     private LocalDateTime createdAt;
 }
