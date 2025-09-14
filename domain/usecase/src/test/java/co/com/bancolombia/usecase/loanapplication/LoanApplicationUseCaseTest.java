@@ -4,7 +4,6 @@ import co.com.bancolombia.model.user.UserInfo;
 import co.com.bancolombia.model.user.UserValidator;
 import co.com.bancolombia.model.exception.business.InvalidLoanAmountException;
 import co.com.bancolombia.model.exception.business.LoanTypeNotFoundException;
-import co.com.bancolombia.model.exception.business.StateNotFoundException;
 import co.com.bancolombia.model.exception.security.UserIdMismatchException;
 import co.com.bancolombia.model.loanapplication.LoanApplication;
 import co.com.bancolombia.model.loantype.LoanType;
@@ -13,7 +12,8 @@ import co.com.bancolombia.model.loanapplication.gateways.LoanApplicationReposito
 import co.com.bancolombia.model.loantype.gateways.LoanTypeRepository;
 import co.com.bancolombia.model.state.gateways.StateRepository;
 import co.com.bancolombia.model.user.gateways.AuthorizationGateway;
-import co.com.bancolombia.model.loanapplication.gateways.NotificationGateway;
+import co.com.bancolombia.model.loanapplication.gateways.NotificationQueueGateway;
+import co.com.bancolombia.usecase.debtcapacity.DebtCapacityUseCasePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -29,13 +29,11 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.lenient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class LoanApplicationUseCaseTest {
@@ -56,7 +54,10 @@ class LoanApplicationUseCaseTest {
     private AuthorizationGateway authorizationGateway;
 
     @Mock
-    private NotificationGateway notificationGateway;
+    private NotificationQueueGateway notificationQueueGateway;
+
+    @Mock
+    private DebtCapacityUseCasePort debtCapacityUseCase;
 
     private LoanApplicationUseCase useCase;
 
@@ -65,7 +66,7 @@ class LoanApplicationUseCaseTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        useCase = new LoanApplicationUseCase(loanApplicationRepository, loanTypeRepository, stateRepository, userValidator, authorizationGateway, notificationGateway);
+        useCase = new LoanApplicationUseCase(loanApplicationRepository, loanTypeRepository, stateRepository, userValidator, authorizationGateway, notificationQueueGateway, debtCapacityUseCase);
 
         // Mock UserValidator to return a UserInfo for any clientId and JWT token
         UserInfo mockUserInfo = new UserInfo(123L, "John", "Doe", "john.doe@example.com", "123456789",
@@ -90,8 +91,8 @@ class LoanApplicationUseCaseTest {
                 .build();
         when(stateRepository.findById(anyLong())).thenReturn(Mono.just(mockState));
 
-        // Mock NotificationGateway
-        when(notificationGateway.sendStatusChangeNotification(any(LoanApplication.class), anyString())).thenReturn(Mono.just("messageId"));
+        // Mock NotificationQueueGateway
+        when(notificationQueueGateway.sendStatusNotification(any(LoanApplication.class), anyString())).thenReturn(Mono.just("messageId"));
 
         // Mock AuthorizationGateway - default to allow access
         when(authorizationGateway.validateAdvisorOrAdminAccess(anyString())).thenReturn(Mono.empty());
@@ -461,7 +462,7 @@ class LoanApplicationUseCaseTest {
         when(loanApplicationRepository.findById(applicationId)).thenReturn(Mono.just(existingApplication));
         when(loanApplicationRepository.updateStatus(applicationId, newStatusId)).thenReturn(Mono.just(updatedApplication));
         when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
-        when(notificationGateway.sendStatusChangeNotification(updatedApplication, userInfo.email())).thenReturn(Mono.just("messageId"));
+        when(queueGateway.sendMessageToQueue(updatedApplication, userInfo.email())).thenReturn(Mono.just("messageId"));
 
         // Act & Assert
         StepVerifier.create(useCase.updateLoanApplicationStatus(applicationId, newStatusId, jwtToken))

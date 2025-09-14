@@ -104,7 +104,7 @@ class LoanTypeTest {
             // Act
             LoanType loanType = new LoanType(
                     TEST_ID, TEST_NAME, TEST_MIN_AMOUNT,
-                    TEST_MAX_AMOUNT, TEST_INTEREST_RATE);
+                    TEST_MAX_AMOUNT, TEST_INTEREST_RATE, true);
 
             // Assert
             assertEquals(TEST_ID, loanType.getId());
@@ -112,6 +112,7 @@ class LoanTypeTest {
             assertEquals(TEST_MIN_AMOUNT, loanType.getMinAmount());
             assertEquals(TEST_MAX_AMOUNT, loanType.getMaxAmount());
             assertEquals(TEST_INTEREST_RATE, loanType.getInterestRate());
+            assertEquals(true, loanType.getAutomaticValidation());
         }
     }
 
