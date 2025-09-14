@@ -10,7 +10,8 @@ import co.com.bancolombia.model.exception.business.LoanTypeNotFoundException;
 import co.com.bancolombia.model.exception.business.StateNotFoundException;
 import co.com.bancolombia.model.loantype.LoanType;
 import co.com.bancolombia.model.loantype.gateways.LoanTypeRepository;
-import co.com.bancolombia.model.loanapplication.gateways.NotificationGateway;
+import co.com.bancolombia.model.loanapplication.gateways.NotificationQueueGateway;
+import co.com.bancolombia.usecase.debtcapacity.DebtCapacityUseCasePort;
 import co.com.bancolombia.model.state.State;
 import co.com.bancolombia.model.state.gateways.StateRepository;
 import co.com.bancolombia.model.user.UserInfo;
@@ -39,7 +40,8 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
     private final StateRepository stateRepository;
     private final UserValidator userValidator;
     private final AuthorizationGateway authorizationGateway;
-    private final NotificationGateway notificationGateway;
+    private final NotificationQueueGateway notificationQueueGateway;
+    private final DebtCapacityUseCasePort debtCapacityUseCase;
 
     @Override
     public Mono<LoanApplication> registerLoanApplication(LoanApplication loanApplication, String jwtToken) {
@@ -48,16 +50,27 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
                 .flatMap(userInfo -> loanTypeRepository.findById(loanApplication.getLoanTypeId())
                         .switchIfEmpty(Mono.error(new LoanTypeNotFoundException(LOAN_TYPE_NOT_FOUND_MESSAGE + loanApplication.getLoanTypeId())))
                         .doOnNext(loanType -> validateLoanAmount(loanApplication.getAmount(), loanType))
-                        .map(loanType -> LoanApplication.builder()
-                                .clientId(loanApplication.getClientId())
-                                .amount(loanApplication.getAmount())
-                                .term(loanApplication.getTerm())
-                                .loanTypeId(loanApplication.getLoanTypeId())
-                                .statusId(PENDING_REVIEW_STATE_ID)
-                                .createdAt(LocalDateTime.now())
-                                .build()
-                        )
-                        .flatMap(loanApplicationRepository::saveLoanApplication)
+                        .flatMap(loanType -> {
+                            LoanApplication newApplication = LoanApplication.builder()
+                                    .clientId(loanApplication.getClientId())
+                                    .amount(loanApplication.getAmount())
+                                    .term(loanApplication.getTerm())
+                                    .loanTypeId(loanApplication.getLoanTypeId())
+                                    .statusId(PENDING_REVIEW_STATE_ID)
+                                    .automaticValidation(loanApplication.getAutomaticValidation())
+                                    .createdAt(LocalDateTime.now())
+                                    .build();
+
+                            return loanApplicationRepository.saveLoanApplication(newApplication)
+                                    .flatMap(savedApplication -> {
+                                        if (Boolean.TRUE.equals(loanApplication.getAutomaticValidation())) {
+                                            return debtCapacityUseCase.calculateDebtCapacity(savedApplication, jwtToken)
+                                                    .thenReturn(savedApplication);
+                                        } else {
+                                            return Mono.just(savedApplication);
+                                        }
+                                    });
+                        })
                 );
     }
 
@@ -144,7 +157,7 @@ public class LoanApplicationUseCase implements LoanApplicationUseCasePort {
                         .then(loanApplicationRepository.updateStatus(id, statusId)))
                 .flatMap(loanApplication -> userValidator.validateUserInfo(loanApplication.getClientId(), jwtToken)
                         .map(UserInfo::email)
-                        .flatMap(email -> notificationGateway.sendStatusChangeNotification(loanApplication, email))
+                        .flatMap(email -> notificationQueueGateway.sendStatusNotification(loanApplication, email))
                         .thenReturn(loanApplication));
     }
 
