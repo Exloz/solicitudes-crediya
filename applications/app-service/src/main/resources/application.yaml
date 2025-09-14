@@ -64,8 +64,8 @@ jwt:
 entrypoint:
   sqs:
     region: "us-east-1"
-    endpoint: "http://localhost:4566"
-    queueDebtResponseUrl: "${SQS_QUEUE_DEBT_RESPONSES_URL}"
+#    endpoint: "http://localhost:4566"
+    queueDebtResponseUrl: "${SQS_QUEUE_DEBT_RESPONSE_URL}"
     waitTimeSeconds: 20
     maxNumberOfMessages: 10
     visibilityTimeoutSeconds: 10

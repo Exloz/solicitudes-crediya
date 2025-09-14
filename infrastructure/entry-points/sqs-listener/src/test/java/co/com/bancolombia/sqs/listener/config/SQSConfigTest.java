@@ -27,7 +27,7 @@ class SQSConfigTest {
     void init() {
         MockitoAnnotations.openMocks(this);
         when(sqsProperties.region()).thenReturn("us-east-1");
-        when(sqsProperties.queueUrl()).thenReturn("http://localhost:4566/00000000000/queue-sqs");
+        when(sqsProperties.queueDebtResponseUrl()).thenReturn("http://localhost:4566/00000000000/queue-sqs");
         when(sqsProperties.waitTimeSeconds()).thenReturn(20);
         when(sqsProperties.maxNumberOfMessages()).thenReturn(10);
         when(sqsProperties.numberOfThreads()).thenReturn(1);

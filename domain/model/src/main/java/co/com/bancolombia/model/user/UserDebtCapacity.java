@@ -1,4 +1,4 @@
-package co.com.bancolombia.sqs.sender.services.debtCapacity;
+package co.com.bancolombia.model.user;
 
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class DebtCapacityResponseMessage {
+public class UserDebtCapacity {
     private UUID requestId;
     private UUID applicationId;
     private String decision;
