@@ -36,7 +36,7 @@ ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO state (name, description) VALUES
 ('Pending review', 'The application has been received but not yet reviewed'),
-('Under review', 'The application is currently being evaluated'),
+('Manual review', 'The application must be reviewed manually'),
 ('Approved', 'The application has been accepted and approved'),
 ('Rejected', 'The application has been denied'),
 ('Cancelled', 'The application was withdrawn or cancelled by the applicant')
