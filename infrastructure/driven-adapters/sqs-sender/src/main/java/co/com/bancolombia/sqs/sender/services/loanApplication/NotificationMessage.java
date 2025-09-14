@@ -1,4 +1,4 @@
-package co.com.bancolombia.sqs.sender;
+package co.com.bancolombia.sqs.sender.services.loanApplication;
 
 
 import java.math.BigDecimal;
