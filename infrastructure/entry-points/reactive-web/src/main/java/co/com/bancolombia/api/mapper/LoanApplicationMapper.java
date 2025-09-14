@@ -14,6 +14,7 @@ public interface LoanApplicationMapper {
     @Mapping(target = "statusId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     LoanApplication toModel(LoanApplicationRequest loanApplicationRequest);
+
     @Mapping(target = "status", source = "statusId")
     LoanApplicationResponse toResponse(LoanApplication loanApplication);
 

@@ -35,6 +35,8 @@ public class LoanApplicationRequest {
     private static final String LOAN_TYPE_ID_DESCRIPTION = "ID of the loan type";
     private static final String LOAN_TYPE_ID_EXAMPLE = "1";
     private static final String LOAN_TYPE_ID_REQUIRED_MESSAGE = "Loan type ID is required";
+    public static final String AUTOMATIC_VALIDATION_DESCRIPTION = "Flag indicating if the application should undergo automatic validation";
+    public static final String AUTOMATIC_VALIDATION_EXAMPLE = "true";
 
     @Schema(description = CLIENT_ID_DESCRIPTION, example = CLIENT_ID_EXAMPLE)
     @NotBlank(message = CLIENT_ID_REQUIRED_MESSAGE)
@@ -53,4 +55,8 @@ public class LoanApplicationRequest {
     @Schema(description = LOAN_TYPE_ID_DESCRIPTION, example = LOAN_TYPE_ID_EXAMPLE)
     @NotNull(message = LOAN_TYPE_ID_REQUIRED_MESSAGE)
     private Long loanTypeId;
+
+    @Schema(description = AUTOMATIC_VALIDATION_DESCRIPTION, example = AUTOMATIC_VALIDATION_EXAMPLE)
+    @Builder.Default
+    private Boolean automaticValidation = true;
 }
