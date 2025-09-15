@@ -462,7 +462,7 @@ class LoanApplicationUseCaseTest {
         when(loanApplicationRepository.findById(applicationId)).thenReturn(Mono.just(existingApplication));
         when(loanApplicationRepository.updateStatus(applicationId, newStatusId)).thenReturn(Mono.just(updatedApplication));
         when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
-        when(queueGateway.sendMessageToQueue(updatedApplication, userInfo.email())).thenReturn(Mono.just("messageId"));
+        when(notificationQueueGateway.sendStatusNotification(updatedApplication, userInfo.email())).thenReturn(Mono.just("messageId"));
 
         // Act & Assert
         StepVerifier.create(useCase.updateLoanApplicationStatus(applicationId, newStatusId, jwtToken))
@@ -552,6 +552,439 @@ class LoanApplicationUseCaseTest {
         StepVerifier.create(useCase.updateLoanApplicationStatus(applicationId, newStatusId, jwtToken))
                 .expectErrorMatches(throwable -> throwable instanceof RuntimeException &&
                         throwable.getMessage().contains("User not found"))
+                .verify();
+    }
+
+    @Test
+    void registerLoanApplication_withAutomaticValidation_shouldTriggerDebtCapacityCalculation() {
+        // Arrange
+        String jwtToken = "valid.jwt.token";
+        String clientId = "client123";
+        BigDecimal amount = new BigDecimal("50000");
+        Integer term = 12;
+        Long loanTypeId = 1L;
+
+        UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
+                clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
+
+        LoanApplication input = LoanApplication.builder()
+                .clientId(clientId)
+                .amount(amount)
+                .term(term)
+                .loanTypeId(loanTypeId)
+                .automaticValidation(true)
+                .build();
+
+        LoanType loanType = LoanType.builder()
+                .id(loanTypeId)
+                .name("Personal Loan")
+                .minAmount(new BigDecimal("10000"))
+                .maxAmount(new BigDecimal("100000"))
+                .interestRate(new BigDecimal("0.15"))
+                .automaticValidation(true)
+                .build();
+
+        State pendingState = State.builder()
+                .id(1L)
+                .name("Pending review")
+                .description("Application is pending review")
+                .build();
+
+        LoanApplication expected = LoanApplication.builder()
+                .clientId(clientId)
+                .amount(amount)
+                .term(term)
+                .loanTypeId(loanTypeId)
+                .statusId(1L)
+                .automaticValidation(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
+        when(stateRepository.findByName("Pending review")).thenReturn(Mono.just(pendingState));
+        when(loanApplicationRepository.saveLoanApplication(any(LoanApplication.class))).thenReturn(Mono.just(expected));
+        when(debtCapacityUseCase.calculateDebtCapacity(any(LoanApplication.class), eq(jwtToken))).thenReturn(Mono.just("debt-capacity-message-id"));
+
+        // Act & Assert
+        StepVerifier.create(useCase.registerLoanApplication(input, jwtToken))
+                .expectNextMatches(saved -> saved.getAutomaticValidation() != null && saved.getAutomaticValidation())
+                .verifyComplete();
+    }
+
+    @Test
+    void registerLoanApplication_withoutAutomaticValidation_shouldNotTriggerDebtCapacityCalculation() {
+        // Arrange
+        String jwtToken = "valid.jwt.token";
+        String clientId = "client123";
+        BigDecimal amount = new BigDecimal("50000");
+        Integer term = 12;
+        Long loanTypeId = 1L;
+
+        UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
+                clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
+
+        LoanApplication input = LoanApplication.builder()
+                .clientId(clientId)
+                .amount(amount)
+                .term(term)
+                .loanTypeId(loanTypeId)
+                .automaticValidation(false)
+                .build();
+
+        LoanType loanType = LoanType.builder()
+                .id(loanTypeId)
+                .name("Personal Loan")
+                .minAmount(new BigDecimal("10000"))
+                .maxAmount(new BigDecimal("100000"))
+                .interestRate(new BigDecimal("0.15"))
+                .automaticValidation(false)
+                .build();
+
+        State pendingState = State.builder()
+                .id(1L)
+                .name("Pending review")
+                .description("Application is pending review")
+                .build();
+
+        LoanApplication expected = LoanApplication.builder()
+                .clientId(clientId)
+                .amount(amount)
+                .term(term)
+                .loanTypeId(loanTypeId)
+                .statusId(1L)
+                .automaticValidation(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
+        when(stateRepository.findByName("Pending review")).thenReturn(Mono.just(pendingState));
+        when(loanApplicationRepository.saveLoanApplication(any(LoanApplication.class))).thenReturn(Mono.just(expected));
+
+        // Act & Assert
+        StepVerifier.create(useCase.registerLoanApplication(input, jwtToken))
+                .expectNextMatches(saved -> saved.getAutomaticValidation() != null && !saved.getAutomaticValidation())
+                .verifyComplete();
+    }
+
+    @Test
+    void registerLoanApplication_debtCapacityCalculationError_shouldStillSaveApplication() {
+        // Arrange
+        String jwtToken = "valid.jwt.token";
+        String clientId = "client123";
+        BigDecimal amount = new BigDecimal("50000");
+        Integer term = 12;
+        Long loanTypeId = 1L;
+
+        UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
+                clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
+
+        LoanApplication input = LoanApplication.builder()
+                .clientId(clientId)
+                .amount(amount)
+                .term(term)
+                .loanTypeId(loanTypeId)
+                .automaticValidation(true)
+                .build();
+
+        LoanType loanType = LoanType.builder()
+                .id(loanTypeId)
+                .name("Personal Loan")
+                .minAmount(new BigDecimal("10000"))
+                .maxAmount(new BigDecimal("100000"))
+                .interestRate(new BigDecimal("0.15"))
+                .automaticValidation(true)
+                .build();
+
+        State pendingState = State.builder()
+                .id(1L)
+                .name("Pending review")
+                .description("Application is pending review")
+                .build();
+
+        LoanApplication expected = LoanApplication.builder()
+                .clientId(clientId)
+                .amount(amount)
+                .term(term)
+                .loanTypeId(loanTypeId)
+                .statusId(1L)
+                .automaticValidation(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
+        when(stateRepository.findByName("Pending review")).thenReturn(Mono.just(pendingState));
+        when(loanApplicationRepository.saveLoanApplication(any(LoanApplication.class))).thenReturn(Mono.just(expected));
+        when(debtCapacityUseCase.calculateDebtCapacity(any(LoanApplication.class), eq(jwtToken)))
+                .thenReturn(Mono.error(new RuntimeException("Debt capacity service unavailable")));
+
+        // Act & Assert - Should still save the application even if debt capacity calculation fails
+        StepVerifier.create(useCase.registerLoanApplication(input, jwtToken))
+                .expectNextMatches(saved -> saved.getClientId().equals(clientId))
+                .verifyComplete();
+    }
+
+    @Test
+    void getLoanApplications_withDifferentStatusFilters_shouldReturnFilteredResults() {
+        // Arrange
+        String jwtToken = "valid.jwt.token";
+        int page = 0;
+        int size = 10;
+        List<Long> statusIds = List.of(1L, 2L, 3L); // Multiple status filters
+
+        UUID applicationId1 = UUID.randomUUID();
+        UUID applicationId2 = UUID.randomUUID();
+        String clientId = "client123";
+
+        LoanApplication application1 = LoanApplication.builder()
+                .id(applicationId1)
+                .clientId(clientId)
+                .loanTypeId(1L)
+                .statusId(1L)
+                .build();
+
+        LoanApplication application2 = LoanApplication.builder()
+                .id(applicationId2)
+                .clientId(clientId)
+                .loanTypeId(1L)
+                .statusId(2L)
+                .build();
+
+        when(loanApplicationRepository.findByStatus(any(), eq(size), eq(0L))).thenReturn(Flux.just(application1, application2));
+        when(loanTypeRepository.findById(1L)).thenReturn(Mono.just(LoanType.builder()
+                .id(1L)
+                .name("Personal Loan")
+                .interestRate(BigDecimal.valueOf(0.12))
+                .minAmount(BigDecimal.valueOf(1000))
+                .maxAmount(BigDecimal.valueOf(50000))
+                .build()));
+        when(stateRepository.findById(anyLong())).thenReturn(Mono.just(State.builder()
+                .id(1L)
+                .name("Pending review")
+                .build()));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(new UserInfo(
+                1L, "John", "Doe", "john.doe@example.com", "123456789",
+                "555-1234", "123 Main St", LocalDate.of(1990, 1, 1), "USER", BigDecimal.valueOf(5000)
+        )));
+
+        // Act & Assert
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size, statusIds))
+                .expectNextCount(2)
+                .verifyComplete();
+    }
+
+    @Test
+    void getLoanApplications_withEmptyStatusFilter_shouldReturnAllApplications() {
+        // Arrange
+        String jwtToken = "valid.jwt.token";
+        int page = 0;
+        int size = 10;
+        List<Long> statusIds = List.of(); // Empty status filter
+
+        UUID applicationId = UUID.randomUUID();
+        String clientId = "client123";
+
+        LoanApplication application = LoanApplication.builder()
+                .id(applicationId)
+                .clientId(clientId)
+                .loanTypeId(1L)
+                .statusId(1L)
+                .build();
+
+        when(loanApplicationRepository.findByStatus(any(), eq(size), eq(0L))).thenReturn(Flux.just(application));
+        when(loanTypeRepository.findById(1L)).thenReturn(Mono.just(LoanType.builder()
+                .id(1L)
+                .name("Personal Loan")
+                .interestRate(BigDecimal.valueOf(0.12))
+                .minAmount(BigDecimal.valueOf(1000))
+                .maxAmount(BigDecimal.valueOf(50000))
+                .build()));
+        when(stateRepository.findById(1L)).thenReturn(Mono.just(State.builder()
+                .id(1L)
+                .name("Pending review")
+                .build()));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(new UserInfo(
+                1L, "John", "Doe", "john.doe@example.com", "123456789",
+                "555-1234", "123 Main St", LocalDate.of(1990, 1, 1), "USER", BigDecimal.valueOf(5000)
+        )));
+
+        // Act & Assert
+        StepVerifier.create(useCase.getLoanApplications(jwtToken, page, size, statusIds))
+                .expectNextCount(1)
+                .verifyComplete();
+    }
+
+    @Test
+    void updateLoanApplicationStatus_toApproved_shouldSendNotification() {
+        // Arrange
+        UUID applicationId = UUID.randomUUID();
+        Long newStatusId = 3L; // Approved
+        String jwtToken = "valid.jwt.token";
+        String clientId = "client123";
+
+        LoanApplication existingApplication = LoanApplication.builder()
+                .id(applicationId)
+                .clientId(clientId)
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .statusId(1L)
+                .build();
+
+        LoanApplication updatedApplication = existingApplication.toBuilder()
+                .statusId(newStatusId)
+                .build();
+
+        UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
+                clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
+
+        when(authorizationGateway.validateAdvisorOrAdminAccess(jwtToken)).thenReturn(Mono.empty());
+        when(loanApplicationRepository.findById(applicationId)).thenReturn(Mono.just(existingApplication));
+        when(loanApplicationRepository.updateStatus(applicationId, newStatusId)).thenReturn(Mono.just(updatedApplication));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(notificationQueueGateway.sendStatusNotification(updatedApplication, userInfo.email())).thenReturn(Mono.just("notification-message-id"));
+
+        // Act & Assert
+        StepVerifier.create(useCase.updateLoanApplicationStatus(applicationId, newStatusId, jwtToken))
+                .expectNextMatches(app -> app.getStatusId().equals(newStatusId))
+                .verifyComplete();
+    }
+
+    @Test
+    void updateLoanApplicationStatus_notificationFailure_shouldStillUpdateStatus() {
+        // Arrange
+        UUID applicationId = UUID.randomUUID();
+        Long newStatusId = 3L; // Approved
+        String jwtToken = "valid.jwt.token";
+        String clientId = "client123";
+
+        LoanApplication existingApplication = LoanApplication.builder()
+                .id(applicationId)
+                .clientId(clientId)
+                .amount(new BigDecimal("50000"))
+                .term(12)
+                .loanTypeId(1L)
+                .statusId(1L)
+                .build();
+
+        LoanApplication updatedApplication = existingApplication.toBuilder()
+                .statusId(newStatusId)
+                .build();
+
+        UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
+                clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
+
+        when(authorizationGateway.validateAdvisorOrAdminAccess(jwtToken)).thenReturn(Mono.empty());
+        when(loanApplicationRepository.findById(applicationId)).thenReturn(Mono.just(existingApplication));
+        when(loanApplicationRepository.updateStatus(applicationId, newStatusId)).thenReturn(Mono.just(updatedApplication));
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(notificationQueueGateway.sendStatusNotification(updatedApplication, userInfo.email()))
+                .thenReturn(Mono.error(new RuntimeException("Notification service unavailable")));
+
+        // Act & Assert - Should still update status even if notification fails
+        StepVerifier.create(useCase.updateLoanApplicationStatus(applicationId, newStatusId, jwtToken))
+                .expectNextMatches(app -> app.getStatusId().equals(newStatusId))
+                .verifyComplete();
+    }
+
+    @Test
+    void registerLoanApplication_withNullAmount_shouldHandleGracefully() {
+        // Arrange
+        String jwtToken = "valid.jwt.token";
+        String clientId = "client123";
+        Long loanTypeId = 1L;
+
+        UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
+                clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
+
+        LoanApplication input = LoanApplication.builder()
+                .clientId(clientId)
+                .amount(null) // Null amount
+                .loanTypeId(loanTypeId)
+                .build();
+
+        LoanType loanType = LoanType.builder()
+                .id(loanTypeId)
+                .name("Personal Loan")
+                .minAmount(new BigDecimal("10000"))
+                .maxAmount(new BigDecimal("100000"))
+                .interestRate(new BigDecimal("0.15"))
+                .build();
+
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
+
+        // Act & Assert
+        StepVerifier.create(useCase.registerLoanApplication(input, jwtToken))
+                .expectError(InvalidLoanAmountException.class)
+                .verify();
+    }
+
+    @Test
+    void registerLoanApplication_withZeroAmount_shouldHandleGracefully() {
+        // Arrange
+        String jwtToken = "valid.jwt.token";
+        String clientId = "client123";
+        Long loanTypeId = 1L;
+
+        UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
+                clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
+
+        LoanApplication input = LoanApplication.builder()
+                .clientId(clientId)
+                .amount(BigDecimal.ZERO) // Zero amount
+                .loanTypeId(loanTypeId)
+                .build();
+
+        LoanType loanType = LoanType.builder()
+                .id(loanTypeId)
+                .name("Personal Loan")
+                .minAmount(new BigDecimal("10000"))
+                .maxAmount(new BigDecimal("100000"))
+                .interestRate(new BigDecimal("0.15"))
+                .build();
+
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
+
+        // Act & Assert
+        StepVerifier.create(useCase.registerLoanApplication(input, jwtToken))
+                .expectError(InvalidLoanAmountException.class)
+                .verify();
+    }
+
+    @Test
+    void registerLoanApplication_withNegativeAmount_shouldHandleGracefully() {
+        // Arrange
+        String jwtToken = "valid.jwt.token";
+        String clientId = "client123";
+        Long loanTypeId = 1L;
+
+        UserInfo userInfo = new UserInfo(1L, "John", "Doe", "john@example.com",
+                clientId, "1234567890", "Address", LocalDate.now(), "USER", new BigDecimal("50000"));
+
+        LoanApplication input = LoanApplication.builder()
+                .clientId(clientId)
+                .amount(new BigDecimal("-1000")) // Negative amount
+                .loanTypeId(loanTypeId)
+                .build();
+
+        LoanType loanType = LoanType.builder()
+                .id(loanTypeId)
+                .name("Personal Loan")
+                .minAmount(new BigDecimal("10000"))
+                .maxAmount(new BigDecimal("100000"))
+                .interestRate(new BigDecimal("0.15"))
+                .build();
+
+        when(userValidator.validateUserInfo(clientId, jwtToken)).thenReturn(Mono.just(userInfo));
+        when(loanTypeRepository.findById(loanTypeId)).thenReturn(Mono.just(loanType));
+
+        // Act & Assert
+        StepVerifier.create(useCase.registerLoanApplication(input, jwtToken))
+                .expectError(InvalidLoanAmountException.class)
                 .verify();
     }
 }

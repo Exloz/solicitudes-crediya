@@ -24,6 +24,7 @@ public class DebtCapacityUseCase implements DebtCapacityUseCasePort {
         return debtCapacityQueueGateway.sendDebtCapacityRequest(loanApplication, jwtToken);
     }
 
+    //TODO: Review if all infotmation is needed in the response
     @Override
     public Mono<Void> processDebtCapacityResponse(Object response) {
         if (!(response instanceof UserDebtCapacity debtResponse)) {
