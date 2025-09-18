@@ -30,7 +30,7 @@ public class DebtCapacityQueueService implements DebtCapacityQueueGateway {
     private final UserValidator userValidator;
     private final LoanTypeRepository loanTypeRepository;
     private final LoanApplicationRepository loanApplicationRepository;
-    static final Integer APROVED_STATE = 3;
+    static final Integer APPROVED_STATE = 3;
 
     @Override
     public Mono<String> sendDebtCapacityRequest(LoanApplication loanApplication, String jwtToken) {
@@ -78,7 +78,7 @@ public class DebtCapacityQueueService implements DebtCapacityQueueGateway {
     }
 
     private Mono<BigDecimal> calculateTotalMonthlyDebt(String clientId){
-        return loanApplicationRepository.findByStatusAndClientId(APROVED_STATE, clientId)
+        return loanApplicationRepository.findByStatusAndClientId(APPROVED_STATE, clientId)
                 .map(loan -> loan.getAmount().divide(BigDecimal.valueOf(loan.getTerm()), 2, RoundingMode.HALF_UP))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
