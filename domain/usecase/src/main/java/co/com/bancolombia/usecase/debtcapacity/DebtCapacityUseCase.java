@@ -5,10 +5,8 @@ import co.com.bancolombia.model.loanapplication.gateways.DebtCapacityQueueGatewa
 import co.com.bancolombia.model.loanapplication.gateways.LoanApplicationRepository;
 import co.com.bancolombia.model.user.UserDebtCapacity;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @RequiredArgsConstructor
 public class DebtCapacityUseCase implements DebtCapacityUseCasePort {
 

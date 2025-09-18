@@ -57,4 +57,10 @@ public class LoanApplicationAdapter extends ReactiveAdapterOperations<LoanApplic
                 .as(transactionalOperator::transactional)
                 .doOnNext(updated -> log.info("Updated loan application {} to status {}", id, statusId));
     }
+
+    @Override
+    public Flux<LoanApplication> findByStatusAndClientId(Integer status, String clientId) {
+        return repository.fingByStatusAndClientId( status, clientId)
+                .map(this::toEntity);
+    }
 }

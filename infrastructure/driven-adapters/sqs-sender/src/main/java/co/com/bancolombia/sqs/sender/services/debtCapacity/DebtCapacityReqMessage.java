@@ -10,7 +10,6 @@ import java.util.UUID;
 @Data
 @Builder
 public class DebtCapacityReqMessage {
-    private UUID requestId;
     private UUID applicationId;
     private String clientId;
     private String clientEmail;
@@ -19,5 +18,6 @@ public class DebtCapacityReqMessage {
     private Integer loanTerm;
     private Long loanTypeId;
     private BigDecimal interestRate;
+    private BigDecimal totalMonthlyDebt;
     private Instant requestDate;
 }

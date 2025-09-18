@@ -23,4 +23,6 @@ public interface LoanApplicationRepositoryR2dbc extends ReactiveCrudRepository<L
 
     @Query("UPDATE loan_application SET status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *")
     Mono<LoanApplicationEntity> updateStatus(UUID id, Long statusId);
+
+    Flux<LoanApplicationEntity> fingByStatusAndClientId(Integer status, String clientId);
 }
